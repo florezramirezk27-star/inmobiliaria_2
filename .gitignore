@@ -1,0 +1,22 @@
+# Credenciales: nunca se suben al repositorio.
+webapp/WEB-INF/classes/db.properties
+
+# Artefacto de despliegue: se genera, no se versiona.
+dist/
+*.war
+
+# Archivos que crea Tomcat al ejecutar
+work/
+inmobiliaria-data/
+
+# Copias de seguridad y basura del sistema
+*.bak
+*.bak2
+.DS_Store
+__MACOSX/
+Thumbs.db
+
+# Carpetas de editores
+.idea/
+.vscode/
+*.iml

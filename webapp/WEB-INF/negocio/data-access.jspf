@@ -1,0 +1,2887 @@
+<%-- data-access.jspf
+     DAOs del dominio como CLASES LOCALES dentro del método _jspService.
+     Conexiones: usa el miembro conexionBD() declarado en conexion.jspf.
+     Los text blocks originales se reescriben como concatenación para
+     compatibilidad con el compilador de JSP del servidor. --%>
+<%
+    class AuditoriaDAO {
+
+        public void registrar(
+                Integer idUsuario,
+                String accion,
+                String tablaAfectada,
+                Integer idRegistro,
+                String detalle
+        ) {
+
+            String sql = "INSERT INTO auditoria ("
+                    + "id_usuario, "
+                    + "accion, "
+                    + "tabla_afectada, "
+                    + "id_registro, "
+                    + "detalle"
+                    + ") VALUES (?, ?, ?, ?, ?)";
+
+            try (
+                    Connection connection = conexionBD();
+                    PreparedStatement statement =
+                            connection.prepareStatement(sql)
+            ) {
+
+                if (idUsuario == null) {
+                    statement.setNull(1, Types.INTEGER);
+                } else {
+                    statement.setInt(1, idUsuario);
+                }
+
+                statement.setString(2, accion);
+                statement.setString(3, tablaAfectada);
+
+                if (idRegistro == null) {
+                    statement.setNull(4, Types.INTEGER);
+                } else {
+                    statement.setInt(4, idRegistro);
+                }
+
+                statement.setString(5, detalle);
+
+                statement.executeUpdate();
+
+            } catch (SQLException e) {
+
+                throw new RuntimeException(
+                        "Error al registrar auditoría",
+                        e
+                );
+            }
+        }
+
+        public List<Auditoria> listarTodas() {
+
+            String sql = "SELECT "
+                    + "id_auditoria, "
+                    + "id_usuario, "
+                    + "accion, "
+                    + "tabla_afectada, "
+                    + "id_registro, "
+                    + "detalle, "
+                    + "creado_en "
+                    + "FROM auditoria "
+                    + "ORDER BY creado_en DESC";
+
+            List<Auditoria> auditorias = new ArrayList<>();
+
+            try (
+                    Connection connection = conexionBD();
+                    PreparedStatement statement =
+                            connection.prepareStatement(sql);
+                    ResultSet resultSet = statement.executeQuery()
+            ) {
+
+                while (resultSet.next()) {
+
+                    Auditoria auditoria = new Auditoria();
+
+                    auditoria.setIdAuditoria(
+                            resultSet.getLong("id_auditoria")
+                    );
+
+                    int idUsuario =
+                            resultSet.getInt("id_usuario");
+
+                    if (resultSet.wasNull()) {
+                        auditoria.setIdUsuario(null);
+                    } else {
+                        auditoria.setIdUsuario(idUsuario);
+                    }
+
+                    auditoria.setAccion(
+                            resultSet.getString("accion")
+                    );
+
+                    auditoria.setTablaAfectada(
+                            resultSet.getString("tabla_afectada")
+                    );
+
+                    int idRegistro =
+                            resultSet.getInt("id_registro");
+
+                    if (resultSet.wasNull()) {
+                        auditoria.setIdRegistro(null);
+                    } else {
+                        auditoria.setIdRegistro(idRegistro);
+                    }
+
+                    auditoria.setDetalle(
+                            resultSet.getString("detalle")
+                    );
+
+                    auditoria.setCreadoEn(
+                            resultSet.getTimestamp("creado_en")
+                    );
+
+                    auditorias.add(auditoria);
+                }
+
+            } catch (SQLException e) {
+
+                throw new RuntimeException(
+                        "Error al listar auditorías",
+                        e
+                );
+            }
+
+            return auditorias;
+        }
+    }
+
+    class CaracteristicaDAO {
+
+        public List<Caracteristica> listarTodas() throws SQLException {
+
+            String sql = "SELECT id_caracteristica, nombre, categoria FROM caracteristica ORDER BY categoria, nombre";
+
+            List<Caracteristica> caracteristicas = new ArrayList<>();
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+
+                while (rs.next()) {
+                    caracteristicas.add(mapear(rs));
+                }
+            }
+            return caracteristicas;
+        }
+
+        public Caracteristica buscarPorId(int id) throws SQLException {
+
+            String sql = "SELECT id_caracteristica, nombre, categoria "
+                    + "FROM caracteristica "
+                    + "WHERE id_caracteristica = ?";
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setInt(1, id);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return mapear(rs);
+                    }
+                }
+            }
+            return null;
+        }
+
+        public void insertar(Caracteristica caracteristica) throws SQLException {
+
+            String sql = "INSERT INTO caracteristica (nombre, categoria) "
+                    + "VALUES (?, ?)";
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setString(1, caracteristica.getNombre().trim());
+                ps.setString(2, caracteristica.getCategoria());
+
+                ps.executeUpdate();
+            }
+        }
+
+        public void actualizar(Caracteristica caracteristica) throws SQLException {
+
+            String sql = "UPDATE caracteristica "
+                    + "SET nombre = ?, "
+                    + "categoria = ? "
+                    + "WHERE id_caracteristica = ?";
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setString(1, caracteristica.getNombre().trim());
+                ps.setString(2, caracteristica.getCategoria());
+                ps.setInt(3, caracteristica.getId());
+
+                ps.executeUpdate();
+            }
+        }
+
+        public void eliminar(int id) throws SQLException {
+
+            String sql = "DELETE FROM caracteristica "
+                    + "WHERE id_caracteristica = ?";
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setInt(1, id);
+
+                ps.executeUpdate();
+            }
+        }
+
+        public List<Caracteristica> listarPorPropiedad(int propiedadId) throws SQLException {
+
+            String sql = "SELECT c.id_caracteristica, c.nombre, c.categoria, pc.cantidad "
+                    + "FROM propiedad_caracteristica pc "
+                    + "JOIN caracteristica c ON c.id_caracteristica = pc.id_caracteristica "
+                    + "WHERE pc.id_propiedad = ? "
+                    + "ORDER BY c.categoria, c.nombre";
+
+            List<Caracteristica> caracteristicas = new ArrayList<>();
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setInt(1, propiedadId);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Caracteristica c = mapear(rs);
+                        c.setCantidad(rs.getInt("cantidad"));
+                        caracteristicas.add(c);
+                    }
+                }
+            }
+            return caracteristicas;
+        }
+
+        public void asignar(int idPropiedad, int idCaracteristica) throws SQLException {
+
+            String sql = "INSERT INTO propiedad_caracteristica "
+                    + "(id_propiedad, id_caracteristica) "
+                    + "VALUES (?, ?)";
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setInt(1, idPropiedad);
+                ps.setInt(2, idCaracteristica);
+
+                ps.executeUpdate();
+            }
+        }
+
+        public void quitar(int idPropiedad, int idCaracteristica) throws SQLException {
+
+            String sql = "DELETE FROM propiedad_caracteristica "
+                    + "WHERE id_propiedad = ? "
+                    + "AND id_caracteristica = ?";
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setInt(1, idPropiedad);
+                ps.setInt(2, idCaracteristica);
+
+                ps.executeUpdate();
+            }
+        }
+
+        public void reemplazarAsignaciones(int propiedadId, List<Integer> idsCaracteristicas) throws SQLException {
+
+            try (Connection cn = conexionBD()) {
+
+                try (PreparedStatement borrar = cn.prepareStatement(
+                        "DELETE FROM propiedad_caracteristica WHERE id_propiedad = ?")) {
+                    borrar.setInt(1, propiedadId);
+                    borrar.executeUpdate();
+                }
+
+                if (idsCaracteristicas == null || idsCaracteristicas.isEmpty()) {
+                    return;
+                }
+
+                String sql = "INSERT INTO propiedad_caracteristica (id_propiedad, id_caracteristica) VALUES (?, ?)";
+
+                try (PreparedStatement insertar = cn.prepareStatement(sql)) {
+                    for (Integer idCaracteristica : idsCaracteristicas) {
+                        insertar.setInt(1, propiedadId);
+                        insertar.setInt(2, idCaracteristica);
+                        insertar.addBatch();
+                    }
+                    insertar.executeBatch();
+                }
+            }
+        }
+
+        private Caracteristica mapear(ResultSet rs) throws SQLException {
+            Caracteristica c = new Caracteristica();
+            c.setId(rs.getInt("id_caracteristica"));
+            c.setNombre(rs.getString("nombre"));
+            c.setCategoria(rs.getString("categoria"));
+            return c;
+        }
+    }
+
+    class CiudadDAO {
+
+        public List<Ciudad> listarTodas() throws SQLException {
+
+            String sql = "SELECT id_ciudad, nombre, departamento "
+                    + "FROM ciudad "
+                    + "ORDER BY nombre";
+
+            List<Ciudad> ciudades = new ArrayList<>();
+
+            try (
+                    Connection cn = conexionBD();
+                    PreparedStatement ps = cn.prepareStatement(sql);
+                    ResultSet rs = ps.executeQuery()
+            ) {
+
+                while (rs.next()) {
+
+                    ciudades.add(new Ciudad(
+                            rs.getInt("id_ciudad"),
+                            rs.getString("nombre"),
+                            rs.getString("departamento")
+                    ));
+                }
+            }
+
+            return ciudades;
+        }
+
+        public Ciudad buscarPorId(int id) throws SQLException {
+
+            String sql = "SELECT id_ciudad, nombre, departamento "
+                    + "FROM ciudad "
+                    + "WHERE id_ciudad = ?";
+
+            try (
+                    Connection cn = conexionBD();
+                    PreparedStatement ps = cn.prepareStatement(sql)
+            ) {
+
+                ps.setInt(1, id);
+
+                try (ResultSet rs = ps.executeQuery()) {
+
+                    if (rs.next()) {
+
+                        return new Ciudad(
+                                rs.getInt("id_ciudad"),
+                                rs.getString("nombre"),
+                                rs.getString("departamento")
+                        );
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        public void insertar(Ciudad ciudad) throws SQLException {
+
+            String sql = "INSERT INTO ciudad (nombre, departamento) "
+                    + "VALUES (?, ?)";
+
+            try (
+                    Connection cn = conexionBD();
+                    PreparedStatement ps = cn.prepareStatement(sql)
+            ) {
+
+                ps.setString(1, ciudad.getNombre().trim());
+                ps.setString(2, ciudad.getDepartamento().trim());
+
+                ps.executeUpdate();
+            }
+        }
+
+        public void actualizar(Ciudad ciudad) throws SQLException {
+
+            String sql = "UPDATE ciudad "
+                    + "SET nombre = ?, "
+                    + "departamento = ? "
+                    + "WHERE id_ciudad = ?";
+
+            try (
+                    Connection cn = conexionBD();
+                    PreparedStatement ps = cn.prepareStatement(sql)
+            ) {
+
+                ps.setString(1, ciudad.getNombre().trim());
+                ps.setString(2, ciudad.getDepartamento().trim());
+                ps.setInt(3, ciudad.getId());
+
+                ps.executeUpdate();
+            }
+        }
+
+        public void eliminar(int id) throws SQLException {
+
+            String sql = "DELETE FROM ciudad "
+                    + "WHERE id_ciudad = ?";
+
+            try (
+                    Connection cn = conexionBD();
+                    PreparedStatement ps = cn.prepareStatement(sql)
+            ) {
+
+                ps.setInt(1, id);
+
+                ps.executeUpdate();
+            }
+        }
+    }
+
+    class DocumentoDAO {
+
+        private static final String COLUMNAS =
+                "id_documento, id_solicitud, nombre_archivo, ruta, estado, subido_en";
+
+        public List<Documento> listarPorSolicitud(int solicitudId) throws SQLException {
+
+            String sql = "SELECT " + COLUMNAS
+                    + " FROM documento_solicitud WHERE id_solicitud = ? ORDER BY subido_en ASC";
+
+            List<Documento> documentos = new ArrayList<>();
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setInt(1, solicitudId);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        documentos.add(mapear(rs));
+                    }
+                }
+            }
+            return documentos;
+        }
+
+        public boolean cambiarEstado(int idDocumento, EstadoDocumento estado)
+                throws SQLException {
+
+            if (estado == null) {
+                return false;
+            }
+
+            String sql = "UPDATE documento_solicitud SET estado = ? WHERE id_documento = ?";
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setString(1, estado.name());
+                ps.setInt(2, idDocumento);
+
+                return ps.executeUpdate() > 0;
+            }
+        }
+
+        public Documento buscarPorId(int idDocumento) throws SQLException {
+
+            String sql = "SELECT " + COLUMNAS
+                    + " FROM documento_solicitud WHERE id_documento = ?";
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setInt(1, idDocumento);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    return rs.next() ? mapear(rs) : null;
+                }
+            }
+        }
+
+        public int insertar(Documento documento) throws SQLException {
+
+            String sql = "INSERT INTO documento_solicitud (id_solicitud, nombre_archivo, ruta) "
+                    + "VALUES (?, ?, ?)";
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+                ps.setInt(1, documento.getSolicitudId());
+                ps.setString(2, documento.getNombreArchivo());
+                ps.setString(3, documento.getRuta());
+
+                ps.executeUpdate();
+
+                try (ResultSet claves = ps.getGeneratedKeys()) {
+                    if (claves.next()) {
+                        documento.setId(claves.getInt(1));
+                    }
+                }
+                return documento.getId();
+            }
+        }
+
+        public boolean eliminar(int idDocumento) throws SQLException {
+
+            String sql = "DELETE FROM documento_solicitud WHERE id_documento = ?";
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setInt(1, idDocumento);
+                return ps.executeUpdate() > 0;
+            }
+        }
+
+        private Documento mapear(ResultSet rs) throws SQLException {
+
+            Documento documento = new Documento();
+
+            documento.setId(rs.getInt("id_documento"));
+            documento.setSolicitudId(rs.getInt("id_solicitud"));
+            documento.setNombreArchivo(rs.getString("nombre_archivo"));
+            documento.setRuta(rs.getString("ruta"));
+            documento.setEstado(EstadoDocumento.desde(rs.getString("estado")));
+            documento.setSubidoEn(leerFecha(rs, "subido_en"));
+
+            return documento;
+        }
+
+        private LocalDateTime leerFecha(ResultSet rs, String columna)
+                throws SQLException {
+            Timestamp ts = rs.getTimestamp(columna);
+            return ts == null ? null : ts.toLocalDateTime();
+        }
+    }
+
+    class FavoritoDAO {
+
+        public boolean esFavorito(int usuarioId, int propiedadId) throws SQLException {
+
+            String sql = "SELECT 1 FROM favorito WHERE id_usuario = ? AND id_propiedad = ?";
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setInt(1, usuarioId);
+                ps.setInt(2, propiedadId);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    return rs.next();
+                }
+            }
+        }
+
+        public Set<Integer> listarIdsPropiedadPorUsuario(int usuarioId) throws SQLException {
+
+            String sql = "SELECT id_propiedad FROM favorito WHERE id_usuario = ?";
+
+            Set<Integer> ids = new HashSet<>();
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setInt(1, usuarioId);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        ids.add(rs.getInt("id_propiedad"));
+                    }
+                }
+            }
+            return ids;
+        }
+
+        public List<Integer> listarIdsPropiedadPorUsuarioOrdenados(int usuarioId) throws SQLException {
+
+            String sql = "SELECT id_propiedad FROM favorito WHERE id_usuario = ? ORDER BY creado_en DESC";
+
+            List<Integer> ids = new ArrayList<>();
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setInt(1, usuarioId);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        ids.add(rs.getInt("id_propiedad"));
+                    }
+                }
+            }
+            return ids;
+        }
+
+        public void agregar(int usuarioId, int propiedadId) throws SQLException {
+
+            String sql = "INSERT IGNORE INTO favorito (id_usuario, id_propiedad) VALUES (?, ?)";
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setInt(1, usuarioId);
+                ps.setInt(2, propiedadId);
+                ps.executeUpdate();
+            }
+        }
+
+        public void quitar(int usuarioId, int propiedadId) throws SQLException {
+
+            String sql = "DELETE FROM favorito WHERE id_usuario = ? AND id_propiedad = ?";
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setInt(1, usuarioId);
+                ps.setInt(2, propiedadId);
+                ps.executeUpdate();
+            }
+        }
+    }
+
+    class ImagenPropiedadDAO {
+
+        public List<ImagenPropiedad> listarPorPropiedad(int propiedadId) throws SQLException {
+
+            String sql = "SELECT id_imagen, id_propiedad, ruta, texto_alt, es_portada, orden "
+                    + "FROM imagen_propiedad "
+                    + "WHERE id_propiedad = ? "
+                    + "ORDER BY es_portada DESC, orden ASC";
+
+            List<ImagenPropiedad> imagenes = new ArrayList<>();
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setInt(1, propiedadId);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        imagenes.add(mapear(rs));
+                    }
+                }
+            }
+            return imagenes;
+        }
+
+        public ImagenPropiedad buscarPorId(int idImagen) throws SQLException {
+
+            String sql = "SELECT id_imagen, id_propiedad, ruta, texto_alt, es_portada, orden "
+                    + "FROM imagen_propiedad "
+                    + "WHERE id_imagen = ?";
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setInt(1, idImagen);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    return rs.next() ? mapear(rs) : null;
+                }
+            }
+        }
+
+        public int insertar(ImagenPropiedad imagen) throws SQLException {
+
+            boolean esLaPrimera = listarPorPropiedad(imagen.getPropiedadId()).isEmpty();
+
+            String sql = "INSERT INTO imagen_propiedad (id_propiedad, ruta, texto_alt, es_portada, orden) "
+                    + "VALUES (?, ?, ?, ?, ?)";
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+                ps.setInt(1, imagen.getPropiedadId());
+                ps.setString(2, imagen.getRuta());
+                ps.setString(3, imagen.getTextoAlt());
+                ps.setBoolean(4, esLaPrimera);
+                ps.setInt(5, imagen.getOrden());
+
+                ps.executeUpdate();
+
+                try (ResultSet claves = ps.getGeneratedKeys()) {
+                    if (claves.next()) {
+                        imagen.setId(claves.getInt(1));
+                    }
+                }
+                return imagen.getId();
+            }
+        }
+
+        public boolean marcarPortada(int idImagen, int propiedadId) throws SQLException {
+
+            try (Connection cn = conexionBD()) {
+
+                try (PreparedStatement desmarcar = cn.prepareStatement(
+                        "UPDATE imagen_propiedad SET es_portada = FALSE WHERE id_propiedad = ?")) {
+                    desmarcar.setInt(1, propiedadId);
+                    desmarcar.executeUpdate();
+                }
+
+                try (PreparedStatement marcar = cn.prepareStatement(
+                        "UPDATE imagen_propiedad SET es_portada = TRUE WHERE id_imagen = ? AND id_propiedad = ?")) {
+                    marcar.setInt(1, idImagen);
+                    marcar.setInt(2, propiedadId);
+                    return marcar.executeUpdate() > 0;
+                }
+            }
+        }
+
+        public boolean eliminar(int idImagen) throws SQLException {
+
+            ImagenPropiedad borrada = buscarPorId(idImagen);
+            if (borrada == null) {
+                return false;
+            }
+
+            String sql = "DELETE FROM imagen_propiedad WHERE id_imagen = ?";
+            boolean eliminada;
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setInt(1, idImagen);
+                eliminada = ps.executeUpdate() > 0;
+            }
+
+            if (eliminada && borrada.isEsPortada()) {
+                promoverPortadaSiFalta(borrada.getPropiedadId());
+            }
+
+            return eliminada;
+        }
+
+        private void promoverPortadaSiFalta(int propiedadId) throws SQLException {
+
+            List<ImagenPropiedad> restantes = listarPorPropiedad(propiedadId);
+            if (restantes.isEmpty()) {
+                return;
+            }
+
+            boolean hayPortada = false;
+            for (ImagenPropiedad img : restantes) {
+                if (img.isEsPortada()) {
+                    hayPortada = true;
+                    break;
+                }
+            }
+
+            if (!hayPortada) {
+                marcarPortada(restantes.get(0).getId(), propiedadId);
+            }
+        }
+
+        private ImagenPropiedad mapear(ResultSet rs) throws SQLException {
+            ImagenPropiedad img = new ImagenPropiedad();
+            img.setId(rs.getInt("id_imagen"));
+            img.setPropiedadId(rs.getInt("id_propiedad"));
+            img.setRuta(rs.getString("ruta"));
+            img.setTextoAlt(rs.getString("texto_alt"));
+            img.setEsPortada(rs.getBoolean("es_portada"));
+            img.setOrden(rs.getInt("orden"));
+            return img;
+        }
+    }
+
+    class InmobiliariaDAO {
+
+        public List<Inmobiliaria> listarTodas() throws SQLException {
+
+            String sql = "SELECT id_inmobiliaria, nombre_comercial, nit, telefono, id_usuario "
+                    + "FROM inmobiliaria "
+                    + "ORDER BY nombre_comercial";
+
+            List<Inmobiliaria> inmobiliarias = new ArrayList<>();
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+
+                while (rs.next()) {
+                    Inmobiliaria i = new Inmobiliaria();
+                    i.setId(rs.getInt("id_inmobiliaria"));
+                    i.setNombreComercial(rs.getString("nombre_comercial"));
+                    i.setNit(rs.getString("nit"));
+                    i.setTelefono(rs.getString("telefono"));
+                    i.setUsuarioId(rs.getInt("id_usuario"));
+                    inmobiliarias.add(i);
+                }
+            }
+            return inmobiliarias;
+        }
+
+        public Inmobiliaria buscarPorUsuario(int usuarioId) throws SQLException {
+
+            String sql = "SELECT "
+                    + "id_inmobiliaria, "
+                    + "nombre_comercial, "
+                    + "nit, "
+                    + "telefono, "
+                    + "id_usuario "
+                    + "FROM inmobiliaria "
+                    + "WHERE id_usuario = ?";
+
+            try (
+                    Connection cn = conexionBD();
+                    PreparedStatement ps = cn.prepareStatement(sql)
+            ) {
+
+                ps.setInt(1, usuarioId);
+
+                try (ResultSet rs = ps.executeQuery()) {
+
+                    if (rs.next()) {
+
+                        Inmobiliaria inmobiliaria = new Inmobiliaria();
+
+                        inmobiliaria.setId(
+                                rs.getInt("id_inmobiliaria")
+                        );
+
+                        inmobiliaria.setNombreComercial(
+                                rs.getString("nombre_comercial")
+                        );
+
+                        inmobiliaria.setNit(
+                                rs.getString("nit")
+                        );
+
+                        inmobiliaria.setTelefono(
+                                rs.getString("telefono")
+                        );
+
+                        inmobiliaria.setUsuarioId(
+                                rs.getInt("id_usuario")
+                        );
+
+                        return inmobiliaria;
+                    }
+                }
+            }
+
+            return null;
+        }
+    }
+
+    class PerfilDAO {
+
+        public boolean existeDocumento(String documento) {
+
+            if (documento == null || documento.isBlank()) {
+                return false;
+            }
+
+            String sql = "SELECT COUNT(*) "
+                    + "FROM perfil "
+                    + "WHERE documento = ?";
+
+            try (
+                    Connection connection = conexionBD();
+                    PreparedStatement statement = connection.prepareStatement(sql)
+            ) {
+
+                statement.setString(1, documento);
+
+                try (ResultSet resultSet = statement.executeQuery()) {
+
+                    if (resultSet.next()) {
+                        return resultSet.getInt(1) > 0;
+                    }
+                }
+
+            } catch (SQLException e) {
+
+                throw new RuntimeException(
+                        "Error al verificar el documento",
+                        e
+                );
+            }
+
+            return false;
+        }
+
+        public int crearPerfil(Perfil perfil) {
+
+            String sql = "INSERT INTO perfil ("
+                    + "id_usuario, "
+                    + "nombres, "
+                    + "apellidos, "
+                    + "documento, "
+                    + "telefono, "
+                    + "direccion, "
+                    + "foto"
+                    + ") VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+            try (
+                    Connection connection = conexionBD();
+                    PreparedStatement statement = connection.prepareStatement(
+                            sql,
+                            Statement.RETURN_GENERATED_KEYS
+                    )
+            ) {
+
+                statement.setInt(1, perfil.getIdUsuario());
+                statement.setString(2, perfil.getNombres());
+                statement.setString(3, perfil.getApellidos());
+                statement.setString(4, perfil.getDocumento());
+                statement.setString(5, perfil.getTelefono());
+                statement.setString(6, perfil.getDireccion());
+                statement.setString(7, perfil.getFoto());
+
+                int filasAfectadas = statement.executeUpdate();
+
+                if (filasAfectadas == 0) {
+                    throw new SQLException(
+                            "No se pudo crear el perfil."
+                    );
+                }
+
+                try (ResultSet keys = statement.getGeneratedKeys()) {
+
+                    if (keys.next()) {
+                        return keys.getInt(1);
+                    }
+                }
+
+            } catch (SQLException e) {
+
+                throw new RuntimeException(
+                        "Error al crear el perfil",
+                        e
+                );
+            }
+
+            throw new RuntimeException(
+                    "No se pudo obtener el ID del perfil creado."
+            );
+        }
+
+        public int crearPerfil(Connection connection, Perfil perfil) throws SQLException {
+
+            String sql = "INSERT INTO perfil ("
+                    + "id_usuario, "
+                    + "nombres, "
+                    + "apellidos, "
+                    + "documento, "
+                    + "telefono, "
+                    + "direccion, "
+                    + "foto"
+                    + ") VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+            try (PreparedStatement statement = connection.prepareStatement(
+                    sql,
+                    Statement.RETURN_GENERATED_KEYS
+            )) {
+
+                statement.setInt(1, perfil.getIdUsuario());
+                statement.setString(2, perfil.getNombres());
+                statement.setString(3, perfil.getApellidos());
+                statement.setString(4, perfil.getDocumento());
+                statement.setString(5, perfil.getTelefono());
+                statement.setString(6, perfil.getDireccion());
+                statement.setString(7, perfil.getFoto());
+
+                int filas = statement.executeUpdate();
+
+                if (filas == 0) {
+                    throw new SQLException("No se pudo crear el perfil.");
+                }
+
+                try (ResultSet keys = statement.getGeneratedKeys()) {
+
+                    if (keys.next()) {
+                        return keys.getInt(1);
+                    }
+                }
+            }
+
+            throw new SQLException("No se pudo obtener el ID del perfil.");
+        }
+
+        public Perfil buscarPorUsuario(int idUsuario) {
+
+            String sql = "SELECT "
+                    + "id_perfil, "
+                    + "id_usuario, "
+                    + "nombres, "
+                    + "apellidos, "
+                    + "documento, "
+                    + "telefono, "
+                    + "direccion, "
+                    + "foto "
+                    + "FROM perfil "
+                    + "WHERE id_usuario = ?";
+
+            try (
+                    Connection connection = conexionBD();
+                    PreparedStatement statement = connection.prepareStatement(sql)
+            ) {
+
+                statement.setInt(1, idUsuario);
+
+                try (ResultSet resultSet = statement.executeQuery()) {
+
+                    if (resultSet.next()) {
+
+                        Perfil perfil = new Perfil();
+
+                        perfil.setIdPerfil(resultSet.getInt("id_perfil"));
+                        perfil.setIdUsuario(resultSet.getInt("id_usuario"));
+                        perfil.setNombres(resultSet.getString("nombres"));
+                        perfil.setApellidos(resultSet.getString("apellidos"));
+                        perfil.setDocumento(resultSet.getString("documento"));
+                        perfil.setTelefono(resultSet.getString("telefono"));
+                        perfil.setDireccion(resultSet.getString("direccion"));
+                        perfil.setFoto(resultSet.getString("foto"));
+
+                        return perfil;
+                    }
+                }
+
+            } catch (SQLException e) {
+
+                throw new RuntimeException(
+                        "Error al buscar el perfil",
+                        e
+                );
+            }
+
+            return null;
+        }
+
+        public boolean actualizarPerfil(Perfil perfil) {
+
+            String sql = "UPDATE perfil "
+                    + "SET "
+                    + "nombres = ?, "
+                    + "apellidos = ?, "
+                    + "documento = ?, "
+                    + "telefono = ?, "
+                    + "direccion = ?, "
+                    + "foto = ? "
+                    + "WHERE id_usuario = ?";
+
+            try (
+                    Connection connection = conexionBD();
+                    PreparedStatement statement = connection.prepareStatement(sql)
+            ) {
+
+                statement.setString(1, perfil.getNombres());
+                statement.setString(2, perfil.getApellidos());
+                statement.setString(3, perfil.getDocumento());
+                statement.setString(4, perfil.getTelefono());
+                statement.setString(5, perfil.getDireccion());
+                statement.setString(6, perfil.getFoto());
+                statement.setInt(7, perfil.getIdUsuario());
+
+                return statement.executeUpdate() > 0;
+
+            } catch (SQLException e) {
+
+                throw new RuntimeException(
+                        "Error al actualizar el perfil",
+                        e
+                );
+            }
+        }
+    }
+
+    class PropiedadDAO {
+
+        private static final String COLUMNAS_CATALOGO =
+                "id_propiedad, codigo, matricula_inmobiliaria, titulo, operacion, precio, administracion, "
+                + "area_construida, habitaciones, banos, parqueaderos, estrato, "
+                + "direccion, barrio, creado_en, "
+                + "id_ciudad, id_tipo_propiedad, id_inmobiliaria, id_usuario, "
+                + "tipo_nombre, tipo_slug, ciudad_nombre, ciudad_departamento, "
+                + "inmobiliaria_nombre, ruta_portada";
+
+        public List<Propiedad> listarRecientes(int limite) throws SQLException {
+
+            String sql = "SELECT " + COLUMNAS_CATALOGO
+                    + " FROM v_propiedad_catalogo ORDER BY creado_en DESC LIMIT ?";
+
+            List<Propiedad> propiedades = new ArrayList<>();
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setInt(1, limite);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        propiedades.add(mapearCatalogo(rs));
+                    }
+                }
+            }
+            return propiedades;
+        }
+
+        public List<Propiedad> buscar(FiltroPropiedad filtro) throws SQLException {
+
+            List<Object> parametros = new ArrayList<>();
+            String where = construirWhere(filtro, parametros);
+
+            String sql = "SELECT " + COLUMNAS_CATALOGO
+                    + " FROM v_propiedad_catalogo"
+                    + where
+                    + " ORDER BY creado_en DESC LIMIT ? OFFSET ?";
+
+            parametros.add(filtro.getLimite());
+            parametros.add(filtro.getDesplazamiento());
+
+            List<Propiedad> propiedades = new ArrayList<>();
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                asignarParametros(ps, parametros);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        propiedades.add(mapearCatalogo(rs));
+                    }
+                }
+            }
+            return propiedades;
+        }
+
+        public int contar(FiltroPropiedad filtro) throws SQLException {
+
+            List<Object> parametros = new ArrayList<>();
+            String where = construirWhere(filtro, parametros);
+
+            String sql = "SELECT COUNT(*) FROM v_propiedad_catalogo" + where;
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                asignarParametros(ps, parametros);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    return rs.next() ? rs.getInt(1) : 0;
+                }
+            }
+        }
+
+        public Propiedad buscarPorId(int id) throws SQLException {
+
+            String sql = "SELECT p.*, t.nombre AS tipo_nombre, t.slug AS tipo_slug, "
+                    + "c.nombre AS ciudad_nombre, c.departamento AS ciudad_departamento, "
+                    + "im.nombre_comercial AS inmobiliaria_nombre, "
+                    + "(SELECT img.ruta FROM imagen_propiedad img "
+                    + " WHERE img.id_propiedad = p.id_propiedad "
+                    + " ORDER BY img.es_portada DESC, img.orden ASC LIMIT 1) AS ruta_portada "
+                    + "FROM propiedad p "
+                    + "JOIN tipo_propiedad t ON t.id_tipo_propiedad = p.id_tipo_propiedad "
+                    + "JOIN ciudad c ON c.id_ciudad = p.id_ciudad "
+                    + "JOIN inmobiliaria im ON im.id_inmobiliaria = p.id_inmobiliaria "
+                    + "WHERE p.id_propiedad = ?";
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setInt(1, id);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    return rs.next() ? mapearCompleta(rs) : null;
+                }
+            }
+        }
+
+        public Propiedad buscarPublicadaPorId(int id) throws SQLException {
+            Propiedad propiedad = buscarPorId(id);
+            return propiedad != null
+                    && propiedad.getEstado() == EstadoPropiedad.PUBLICADA
+                    ? propiedad
+                    : null;
+        }
+
+        public int insertar(Propiedad p) throws SQLException {
+
+            String sql = "INSERT INTO propiedad "
+                    + "(codigo, matricula_inmobiliaria, titulo, descripcion, operacion, estado, "
+                    + "id_tipo_propiedad, id_ciudad, id_inmobiliaria, id_usuario, "
+                    + "precio, administracion, area_construida, area_lote, "
+                    + "habitaciones, banos, parqueaderos, estrato, antiguedad_anios, "
+                    + "direccion, barrio, latitud, longitud) "
+                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+                asignarCampos(ps, p);
+
+                ps.executeUpdate();
+
+                try (ResultSet claves = ps.getGeneratedKeys()) {
+                    if (claves.next()) {
+                        p.setId(claves.getInt(1));
+                    }
+                }
+                return p.getId();
+
+            } catch (SQLIntegrityConstraintViolationException e) {
+                if (mencionaColumna(e, "uq_propiedad_matricula")) {
+                    throw new DuplicidadException(
+                            "Ya existe una propiedad registrada con esa matrícula inmobiliaria.", e);
+                }
+                if (mencionaColumna(e, "uq_propiedad_codigo")) {
+                    throw new DuplicidadException(
+                            "Ya existe una propiedad registrada con ese código.", e);
+                }
+                throw e;
+            }
+        }
+
+        private boolean mencionaColumna(SQLIntegrityConstraintViolationException e, String restriccion) {
+            return e.getMessage() != null && e.getMessage().contains(restriccion);
+        }
+
+        public boolean actualizar(Propiedad p) throws SQLException {
+
+            String sql = "UPDATE propiedad SET "
+                    + "codigo = ?, matricula_inmobiliaria = ?, titulo = ?, descripcion = ?, operacion = ?, estado = ?, "
+                    + "id_tipo_propiedad = ?, id_ciudad = ?, id_inmobiliaria = ?, id_usuario = ?, "
+                    + "precio = ?, administracion = ?, area_construida = ?, area_lote = ?, "
+                    + "habitaciones = ?, banos = ?, parqueaderos = ?, estrato = ?, antiguedad_anios = ?, "
+                    + "direccion = ?, barrio = ?, latitud = ?, longitud = ? "
+                    + "WHERE id_propiedad = ?";
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                int i = asignarCampos(ps, p);
+                ps.setInt(i, p.getId());
+
+                return ps.executeUpdate() > 0;
+            }
+        }
+
+        public boolean cambiarEstado(int id, EstadoPropiedad estado) throws SQLException {
+
+            String sql = "UPDATE propiedad SET estado = ? WHERE id_propiedad = ?";
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setString(1, estado.name());
+                ps.setInt(2, id);
+
+                return ps.executeUpdate() > 0;
+            }
+        }
+
+        public boolean eliminar(int id) throws SQLException {
+
+            String sql = "DELETE FROM propiedad WHERE id_propiedad = ?";
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setInt(1, id);
+                return ps.executeUpdate() > 0;
+            }
+        }
+
+        private String construirWhere(FiltroPropiedad filtro, List<Object> parametros) {
+
+            List<String> condiciones = new ArrayList<>();
+
+            if (filtro.getOperacion() != null) {
+                condiciones.add("operacion = ?");
+                parametros.add(filtro.getOperacion().name());
+            }
+            if (filtro.getCiudadId() != null) {
+                condiciones.add("id_ciudad = ?");
+                parametros.add(filtro.getCiudadId());
+            }
+            if (filtro.getTipoSlug() != null && !filtro.getTipoSlug().isBlank()) {
+                condiciones.add("tipo_slug = ?");
+                parametros.add(filtro.getTipoSlug().trim());
+            }
+            if (filtro.getPrecioMinimo() != null) {
+                condiciones.add("precio >= ?");
+                parametros.add(filtro.getPrecioMinimo());
+            }
+            if (filtro.getPrecioMaximo() != null) {
+                condiciones.add("precio <= ?");
+                parametros.add(filtro.getPrecioMaximo());
+            }
+            if (filtro.getHabitacionesMinimo() != null) {
+                condiciones.add("habitaciones >= ?");
+                parametros.add(filtro.getHabitacionesMinimo());
+            }
+            if (filtro.getBanosMinimo() != null) {
+                condiciones.add("banos >= ?");
+                parametros.add(filtro.getBanosMinimo());
+            }
+            if (filtro.getTexto() != null && !filtro.getTexto().isBlank()) {
+                condiciones.add("(titulo LIKE ? OR barrio LIKE ? OR direccion LIKE ?)");
+                String patron = "%" + filtro.getTexto().trim() + "%";
+                parametros.add(patron);
+                parametros.add(patron);
+                parametros.add(patron);
+            }
+
+            List<Integer> caracteristicas = filtro.getCaracteristicasIds();
+            if (caracteristicas != null && !caracteristicas.isEmpty()) {
+                String marcadores = unir(", ",
+                        Collections.nCopies(caracteristicas.size(), "?"));
+
+                condiciones.add(
+                        "id_propiedad IN ("
+                                + "SELECT id_propiedad FROM propiedad_caracteristica "
+                                + "WHERE id_caracteristica IN (" + marcadores + ") "
+                                + "GROUP BY id_propiedad "
+                                + "HAVING COUNT(DISTINCT id_caracteristica) = ?)"
+                );
+
+                for (Integer id : caracteristicas) {
+                    parametros.add(id);
+                }
+                parametros.add(caracteristicas.size());
+            }
+
+            if (condiciones.isEmpty()) {
+                return "";
+            }
+            return " WHERE " + unir(" AND ", condiciones);
+        }
+
+        private String unir(String separador, Iterable<?> valores) {
+            StringBuilder sb = new StringBuilder();
+            for (Object valor : valores) {
+                if (sb.length() > 0) {
+                    sb.append(separador);
+                }
+                sb.append(valor);
+            }
+            return sb.toString();
+        }
+
+        private void asignarParametros(PreparedStatement ps, List<Object> parametros)
+                throws SQLException {
+
+            for (int i = 0; i < parametros.size(); i++) {
+                ps.setObject(i + 1, parametros.get(i));
+            }
+        }
+
+        private int asignarCampos(PreparedStatement ps, Propiedad p) throws SQLException {
+
+            int i = 1;
+
+            ps.setString(i++, p.getCodigo());
+            ps.setString(i++, p.getMatriculaInmobiliaria());
+            ps.setString(i++, p.getTitulo());
+            ps.setString(i++, p.getDescripcion());
+            ps.setString(i++, p.getOperacion().name());
+            ps.setString(i++, p.getEstado() != null
+                    ? p.getEstado().name()
+                    : EstadoPropiedad.BORRADOR.name());
+
+            ps.setInt(i++, p.getTipoPropiedadId());
+            ps.setInt(i++, p.getCiudadId());
+            ps.setInt(i++, p.getInmobiliariaId());
+            ps.setInt(i++, p.getUsuarioId());
+
+            ps.setBigDecimal(i++, p.getPrecio());
+            ps.setBigDecimal(i++, p.getAdministracion() != null
+                    ? p.getAdministracion()
+                    : BigDecimal.ZERO);
+
+            ps.setBigDecimal(i++, p.getAreaConstruida());
+            ps.setBigDecimal(i++, p.getAreaLote());
+
+            ps.setInt(i++, p.getHabitaciones());
+            ps.setInt(i++, p.getBanos());
+            ps.setInt(i++, p.getParqueaderos());
+
+            asignarEntero(ps, i++, p.getEstrato());
+            asignarEntero(ps, i++, p.getAntiguedadAnios());
+
+            ps.setString(i++, p.getDireccion());
+            ps.setString(i++, p.getBarrio());
+            ps.setBigDecimal(i++, p.getLatitud());
+            ps.setBigDecimal(i++, p.getLongitud());
+
+            return i;
+        }
+
+        private void asignarEntero(PreparedStatement ps, int indice, Integer valor)
+                throws SQLException {
+
+            if (valor == null) {
+                ps.setNull(indice, Types.INTEGER);
+            } else {
+                ps.setInt(indice, valor);
+            }
+        }
+
+        private Propiedad mapearCatalogo(ResultSet rs) throws SQLException {
+
+            Propiedad p = new Propiedad();
+
+            p.setId(rs.getInt("id_propiedad"));
+            p.setCodigo(rs.getString("codigo"));
+            p.setMatriculaInmobiliaria(rs.getString("matricula_inmobiliaria"));
+            p.setTitulo(rs.getString("titulo"));
+            p.setOperacion(Operacion.desde(rs.getString("operacion")));
+            p.setPrecio(rs.getBigDecimal("precio"));
+            p.setAdministracion(rs.getBigDecimal("administracion"));
+            p.setAreaConstruida(rs.getBigDecimal("area_construida"));
+            p.setHabitaciones(rs.getInt("habitaciones"));
+            p.setBanos(rs.getInt("banos"));
+            p.setParqueaderos(rs.getInt("parqueaderos"));
+            p.setEstrato(leerEntero(rs, "estrato"));
+            p.setDireccion(rs.getString("direccion"));
+            p.setBarrio(rs.getString("barrio"));
+            p.setCreadoEn(leerFecha(rs, "creado_en"));
+            p.setCiudadId(rs.getInt("id_ciudad"));
+            p.setTipoPropiedadId(rs.getInt("id_tipo_propiedad"));
+            p.setInmobiliariaId(rs.getInt("id_inmobiliaria"));
+            p.setUsuarioId(rs.getInt("id_usuario"));
+            p.setTipoNombre(rs.getString("tipo_nombre"));
+            p.setTipoSlug(rs.getString("tipo_slug"));
+            p.setCiudadNombre(rs.getString("ciudad_nombre"));
+            p.setCiudadDepartamento(rs.getString("ciudad_departamento"));
+            p.setInmobiliariaNombre(rs.getString("inmobiliaria_nombre"));
+            p.setRutaPortada(rs.getString("ruta_portada"));
+
+            p.setEstado(EstadoPropiedad.PUBLICADA);
+
+            return p;
+        }
+
+        private Propiedad mapearCompleta(ResultSet rs) throws SQLException {
+
+            Propiedad p = new Propiedad();
+
+            p.setId(rs.getInt("id_propiedad"));
+            p.setCodigo(rs.getString("codigo"));
+            p.setMatriculaInmobiliaria(rs.getString("matricula_inmobiliaria"));
+            p.setTitulo(rs.getString("titulo"));
+            p.setDescripcion(rs.getString("descripcion"));
+            p.setOperacion(Operacion.desde(rs.getString("operacion")));
+            p.setEstado(EstadoPropiedad.desde(rs.getString("estado")));
+
+            p.setTipoPropiedadId(rs.getInt("id_tipo_propiedad"));
+            p.setCiudadId(rs.getInt("id_ciudad"));
+            p.setInmobiliariaId(rs.getInt("id_inmobiliaria"));
+            p.setUsuarioId(rs.getInt("id_usuario"));
+
+            p.setPrecio(rs.getBigDecimal("precio"));
+            p.setAdministracion(rs.getBigDecimal("administracion"));
+            p.setAreaConstruida(rs.getBigDecimal("area_construida"));
+            p.setAreaLote(rs.getBigDecimal("area_lote"));
+
+            p.setHabitaciones(rs.getInt("habitaciones"));
+            p.setBanos(rs.getInt("banos"));
+            p.setParqueaderos(rs.getInt("parqueaderos"));
+            p.setEstrato(leerEntero(rs, "estrato"));
+            p.setAntiguedadAnios(leerEntero(rs, "antiguedad_anios"));
+
+            p.setDireccion(rs.getString("direccion"));
+            p.setBarrio(rs.getString("barrio"));
+            p.setLatitud(rs.getBigDecimal("latitud"));
+            p.setLongitud(rs.getBigDecimal("longitud"));
+
+            p.setCreadoEn(leerFecha(rs, "creado_en"));
+            p.setActualizadoEn(leerFecha(rs, "actualizado_en"));
+
+            p.setTipoNombre(rs.getString("tipo_nombre"));
+            p.setTipoSlug(rs.getString("tipo_slug"));
+            p.setCiudadNombre(rs.getString("ciudad_nombre"));
+            p.setCiudadDepartamento(rs.getString("ciudad_departamento"));
+            p.setInmobiliariaNombre(rs.getString("inmobiliaria_nombre"));
+            p.setRutaPortada(rs.getString("ruta_portada"));
+
+            return p;
+        }
+
+        private Integer leerEntero(ResultSet rs, String columna) throws SQLException {
+            int valor = rs.getInt(columna);
+            return rs.wasNull() ? null : valor;
+        }
+
+        private LocalDateTime leerFecha(ResultSet rs, String columna)
+                throws SQLException {
+            Timestamp ts = rs.getTimestamp(columna);
+            return ts == null ? null : ts.toLocalDateTime();
+        }
+
+        public List<Propiedad> listarPorInmobiliaria(int inmobiliariaId)
+                throws SQLException {
+
+            String sql = "SELECT p.*, "
+                    + "t.nombre AS tipo_nombre, "
+                    + "t.slug AS tipo_slug, "
+                    + "c.nombre AS ciudad_nombre, "
+                    + "c.departamento AS ciudad_departamento, "
+                    + "im.nombre_comercial AS inmobiliaria_nombre, "
+                    + "(SELECT img.ruta "
+                    + " FROM imagen_propiedad img "
+                    + " WHERE img.id_propiedad = p.id_propiedad "
+                    + " ORDER BY img.es_portada DESC, img.orden ASC "
+                    + " LIMIT 1) AS ruta_portada "
+                    + "FROM propiedad p "
+                    + "JOIN tipo_propiedad t ON t.id_tipo_propiedad = p.id_tipo_propiedad "
+                    + "JOIN ciudad c ON c.id_ciudad = p.id_ciudad "
+                    + "JOIN inmobiliaria im ON im.id_inmobiliaria = p.id_inmobiliaria "
+                    + "WHERE p.id_inmobiliaria = ? "
+                    + "ORDER BY p.creado_en DESC";
+
+            List<Propiedad> propiedades = new ArrayList<>();
+
+            try (
+                    Connection cn = conexionBD();
+                    PreparedStatement ps = cn.prepareStatement(sql)
+            ) {
+
+                ps.setInt(1, inmobiliariaId);
+
+                try (ResultSet rs = ps.executeQuery()) {
+
+                    while (rs.next()) {
+                        propiedades.add(mapearCompleta(rs));
+                    }
+                }
+            }
+
+            return propiedades;
+        }
+    }
+
+    class ReporteDAO {
+
+        public List<Map<String, Object>> propiedadesPublicadas() {
+
+            String sql = "SELECT "
+                    + "p.codigo, "
+                    + "p.titulo, "
+                    + "c.nombre AS ciudad, "
+                    + "t.nombre AS tipo, "
+                    + "i.nombre_comercial AS inmobiliaria "
+                    + "FROM propiedad p "
+                    + "JOIN ciudad c ON c.id_ciudad = p.id_ciudad "
+                    + "JOIN tipo_propiedad t ON t.id_tipo_propiedad = p.id_tipo_propiedad "
+                    + "JOIN inmobiliaria i ON i.id_inmobiliaria = p.id_inmobiliaria "
+                    + "WHERE p.estado = 'PUBLICADA' "
+                    + "ORDER BY p.creado_en DESC";
+
+            return ejecutarConsulta(sql);
+        }
+
+        public List<Map<String, Object>> citasActivas() {
+
+            String sql = "SELECT "
+                    + "p.codigo, "
+                    + "p.titulo, "
+                    + "perf.nombres AS cliente_nombre, "
+                    + "perf.apellidos AS cliente_apellido, "
+                    + "ci.fecha_hora, "
+                    + "ci.estado "
+                    + "FROM cita ci "
+                    + "JOIN propiedad p ON p.id_propiedad = ci.id_propiedad "
+                    + "JOIN usuario u ON u.id_usuario = ci.id_cliente "
+                    + "JOIN perfil perf ON perf.id_usuario = u.id_usuario "
+                    + "WHERE ci.estado IN ('CONFIRMADA', 'SOLICITADA') "
+                    + "ORDER BY ci.fecha_hora";
+
+            return ejecutarConsulta(sql);
+        }
+
+        public List<Map<String, Object>> caracteristicasPropiedad(
+                int idPropiedad
+        ) {
+
+            String sql = "SELECT "
+                    + "p.codigo, "
+                    + "p.titulo, "
+                    + "car.nombre AS caracteristica, "
+                    + "car.categoria, "
+                    + "pc.cantidad "
+                    + "FROM propiedad_caracteristica pc "
+                    + "JOIN propiedad p ON p.id_propiedad = pc.id_propiedad "
+                    + "JOIN caracteristica car ON car.id_caracteristica = pc.id_caracteristica "
+                    + "WHERE p.id_propiedad = ? "
+                    + "ORDER BY car.categoria, car.nombre";
+
+            return ejecutarConsultaConParametro(sql, idPropiedad);
+        }
+
+        public List<Map<String, Object>> propiedadesSinCitas() {
+
+            String sql = "SELECT "
+                    + "p.codigo, "
+                    + "p.titulo, "
+                    + "p.direccion, "
+                    + "ciu.nombre AS ciudad "
+                    + "FROM propiedad p "
+                    + "JOIN ciudad ciu ON ciu.id_ciudad = p.id_ciudad "
+                    + "LEFT JOIN cita c ON c.id_propiedad = p.id_propiedad "
+                    + "WHERE p.estado = 'PUBLICADA' "
+                    + "AND c.id_cita IS NULL";
+
+            return ejecutarConsulta(sql);
+        }
+
+        public List<Map<String, Object>> resumenPorCiudad() {
+
+            String sql = "SELECT "
+                    + "ciu.nombre AS ciudad, "
+                    + "COUNT(*) AS total_publicadas, "
+                    + "ROUND(AVG(p.precio), 0) AS precio_promedio "
+                    + "FROM propiedad p "
+                    + "JOIN ciudad ciu ON ciu.id_ciudad = p.id_ciudad "
+                    + "WHERE p.estado = 'PUBLICADA' "
+                    + "GROUP BY ciu.nombre "
+                    + "HAVING COUNT(*) >= 2 "
+                    + "ORDER BY total_publicadas DESC";
+
+            return ejecutarConsulta(sql);
+        }
+
+        public List<Map<String, Object>> citasPorEstado() {
+
+            String sql = "SELECT "
+                    + "estado, "
+                    + "COUNT(*) AS total "
+                    + "FROM cita "
+                    + "GROUP BY estado "
+                    + "ORDER BY total DESC";
+
+            return ejecutarConsulta(sql);
+        }
+
+        public List<Map<String, Object>> solicitudesPorInmobiliaria() {
+
+            String sql = "SELECT "
+                    + "i.nombre_comercial AS inmobiliaria, "
+                    + "COUNT(s.id_solicitud) AS total_solicitudes "
+                    + "FROM solicitud s "
+                    + "JOIN propiedad p ON p.id_propiedad = s.id_propiedad "
+                    + "JOIN inmobiliaria i ON i.id_inmobiliaria = p.id_inmobiliaria "
+                    + "GROUP BY i.nombre_comercial "
+                    + "ORDER BY total_solicitudes DESC";
+
+            return ejecutarConsulta(sql);
+        }
+
+        public List<Map<String, Object>> resumenOperacionesInmobiliaria(
+                int idInmobiliaria
+        ) {
+
+            String sql = "SELECT "
+                    + "p.operacion, "
+                    + "COUNT(*) AS total_propiedades, "
+                    + "SUM(p.estado = 'PUBLICADA') AS publicadas, "
+                    + "SUM(p.estado = 'BORRADOR') AS borradores, "
+                    + "SUM(p.estado = 'RESERVADA') AS reservadas, "
+                    + "SUM(p.estado = 'CERRADA') AS cerradas, "
+                    + "ROUND(AVG(p.precio), 0) AS precio_promedio "
+                    + "FROM propiedad p "
+                    + "WHERE p.id_inmobiliaria = ? "
+                    + "GROUP BY p.operacion "
+                    + "ORDER BY p.operacion";
+
+            return ejecutarConsultaConParametro(
+                    sql,
+                    idInmobiliaria
+            );
+        }
+
+        public List<Map<String, Object>> solicitudesPorTipoEstadoInmobiliaria(
+                int idInmobiliaria
+        ) {
+
+            String sql = "SELECT "
+                    + "s.tipo, "
+                    + "s.estado, "
+                    + "COUNT(*) AS total_solicitudes "
+                    + "FROM solicitud s "
+                    + "JOIN propiedad p ON p.id_propiedad = s.id_propiedad "
+                    + "WHERE p.id_inmobiliaria = ? "
+                    + "GROUP BY s.tipo, s.estado "
+                    + "ORDER BY s.tipo, s.estado";
+
+            return ejecutarConsultaConParametro(
+                    sql,
+                    idInmobiliaria
+            );
+        }
+
+        public List<Map<String, Object>> operacionesAprobadasInmobiliaria(
+                int idInmobiliaria
+        ) {
+
+            String sql = "SELECT "
+                    + "s.id_solicitud, "
+                    + "p.codigo, "
+                    + "p.titulo, "
+                    + "s.tipo, "
+                    + "CONCAT("
+                    + "COALESCE(perf.nombres, ''), "
+                    + "' ', "
+                    + "COALESCE(perf.apellidos, '')"
+                    + ") AS cliente, "
+                    + "p.precio, "
+                    + "s.actualizado_en "
+                    + "FROM solicitud s "
+                    + "JOIN propiedad p ON p.id_propiedad = s.id_propiedad "
+                    + "LEFT JOIN perfil perf ON perf.id_usuario = s.id_cliente "
+                    + "WHERE p.id_inmobiliaria = ? "
+                    + "AND s.estado = 'APROBADA' "
+                    + "ORDER BY s.actualizado_en DESC";
+
+            return ejecutarConsultaConParametro(
+                    sql,
+                    idInmobiliaria
+            );
+        }
+
+        private List<Map<String, Object>> ejecutarConsulta(
+                String sql
+        ) {
+
+            List<Map<String, Object>> resultados = new ArrayList<>();
+
+            try (
+                    Connection connection = conexionBD();
+                    PreparedStatement statement =
+                            connection.prepareStatement(sql);
+                    ResultSet resultSet =
+                            statement.executeQuery()
+            ) {
+
+                while (resultSet.next()) {
+
+                    resultados.add(convertirFila(resultSet));
+                }
+
+            } catch (SQLException e) {
+
+                throw new RuntimeException(
+                        "Error al ejecutar reporte",
+                        e
+                );
+            }
+
+            return resultados;
+        }
+
+        private List<Map<String, Object>> ejecutarConsultaConParametro(
+                String sql,
+                int parametro
+        ) {
+
+            List<Map<String, Object>> resultados = new ArrayList<>();
+
+            try (
+                    Connection connection = conexionBD();
+                    PreparedStatement statement =
+                            connection.prepareStatement(sql)
+            ) {
+
+                statement.setInt(1, parametro);
+
+                try (ResultSet resultSet =
+                             statement.executeQuery()) {
+
+                    while (resultSet.next()) {
+
+                        resultados.add(convertirFila(resultSet));
+                    }
+                }
+
+            } catch (SQLException e) {
+
+                throw new RuntimeException(
+                        "Error al ejecutar reporte",
+                        e
+                );
+            }
+
+            return resultados;
+        }
+
+        private Map<String, Object> convertirFila(
+                ResultSet resultSet
+        ) throws SQLException {
+
+            Map<String, Object> fila = new HashMap<>();
+
+            int columnas =
+                    resultSet.getMetaData().getColumnCount();
+
+            for (int i = 1; i <= columnas; i++) {
+
+                String nombre =
+                        resultSet.getMetaData()
+                                .getColumnLabel(i);
+
+                fila.put(
+                        nombre,
+                        resultSet.getObject(i)
+                );
+            }
+
+            return fila;
+        }
+    }
+
+    class RolDAO {
+
+        public List<Rol> obtenerRolesPorUsuario(int idUsuario) {
+
+            String sql = "SELECT "
+                    + "r.id_rol, "
+                    + "r.nombre, "
+                    + "r.descripcion "
+                    + "FROM rol r "
+                    + "INNER JOIN usuario_rol ur ON r.id_rol = ur.id_rol "
+                    + "WHERE ur.id_usuario = ? "
+                    + "ORDER BY r.id_rol";
+
+            List<Rol> roles = new ArrayList<>();
+
+            try (
+                    Connection connection = conexionBD();
+                    PreparedStatement statement = connection.prepareStatement(sql)
+            ) {
+
+                statement.setInt(1, idUsuario);
+
+                try (ResultSet resultSet = statement.executeQuery()) {
+
+                    while (resultSet.next()) {
+
+                        Rol rol = new Rol();
+
+                        rol.setIdRol(
+                                resultSet.getInt("id_rol")
+                        );
+
+                        rol.setNombre(
+                                resultSet.getString("nombre")
+                        );
+
+                        rol.setDescripcion(
+                                resultSet.getString("descripcion")
+                        );
+
+                        roles.add(rol);
+                    }
+                }
+
+            } catch (SQLException e) {
+
+                throw new RuntimeException(
+                        "Error al obtener los roles del usuario",
+                        e
+                );
+            }
+
+            return roles;
+        }
+    }
+
+    class SolicitudDAO {
+
+        private static final String COLUMNAS =
+                "id_solicitud, id_propiedad, id_cliente, tipo, estado, comentario, creado_en, actualizado_en";
+
+        public List<Solicitud> listarPorCliente(int clienteId) throws SQLException {
+
+            String sql = "SELECT " + COLUMNAS
+                    + " FROM solicitud WHERE id_cliente = ? ORDER BY creado_en DESC";
+
+            List<Solicitud> solicitudes = new ArrayList<>();
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setInt(1, clienteId);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        solicitudes.add(mapear(rs));
+                    }
+                }
+            }
+            return solicitudes;
+        }
+
+        public List<Solicitud> listarPorPropiedad(int propiedadId) throws SQLException {
+
+            String sql = "SELECT " + COLUMNAS
+                    + " FROM solicitud WHERE id_propiedad = ? ORDER BY creado_en DESC";
+
+            List<Solicitud> solicitudes = new ArrayList<>();
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setInt(1, propiedadId);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        solicitudes.add(mapear(rs));
+                    }
+                }
+            }
+            return solicitudes;
+        }
+
+        public List<Solicitud> listarTodas() throws SQLException {
+
+            String sql = "SELECT " + COLUMNAS
+                    + " FROM solicitud ORDER BY creado_en DESC";
+
+            List<Solicitud> solicitudes = new ArrayList<>();
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        solicitudes.add(mapear(rs));
+                    }
+                }
+            }
+            return solicitudes;
+        }
+
+        public Solicitud buscarPorId(int id) throws SQLException {
+
+            String sql = "SELECT " + COLUMNAS
+                    + " FROM solicitud WHERE id_solicitud = ?";
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setInt(1, id);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    return rs.next() ? mapear(rs) : null;
+                }
+            }
+        }
+
+        public int insertar(Solicitud solicitud) throws SQLException {
+
+            String sql = "INSERT INTO solicitud (id_propiedad, id_cliente, tipo, comentario) "
+                    + "VALUES (?, ?, ?, ?)";
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+                ps.setInt(1, solicitud.getPropiedadId());
+                ps.setInt(2, solicitud.getClienteId());
+                ps.setString(3, solicitud.getTipo().name());
+                ps.setString(4, solicitud.getComentario());
+
+                ps.executeUpdate();
+
+                try (ResultSet claves = ps.getGeneratedKeys()) {
+                    if (claves.next()) {
+                        solicitud.setId(claves.getInt(1));
+                    }
+                }
+                return solicitud.getId();
+            }
+        }
+
+        public boolean cambiarEstado(int id, EstadoSolicitud estado) throws SQLException {
+
+            String sql = "UPDATE solicitud SET estado = ? WHERE id_solicitud = ?";
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setString(1, estado.name());
+                ps.setInt(2, id);
+
+                return ps.executeUpdate() > 0;
+            }
+        }
+
+        public boolean actualizar(Solicitud solicitud) throws SQLException {
+
+            String sql = "UPDATE solicitud SET "
+                    + "id_propiedad = ?, id_cliente = ?, tipo = ?, estado = ?, comentario = ? "
+                    + "WHERE id_solicitud = ?";
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setInt(1, solicitud.getPropiedadId());
+                ps.setInt(2, solicitud.getClienteId());
+                ps.setString(3, solicitud.getTipo().name());
+                ps.setString(4, solicitud.getEstado() != null
+                        ? solicitud.getEstado().name()
+                        : EstadoSolicitud.PENDIENTE.name());
+                ps.setString(5, solicitud.getComentario());
+                ps.setInt(6, solicitud.getId());
+
+                return ps.executeUpdate() > 0;
+            }
+        }
+
+        public boolean perteneceACliente(int idSolicitud, int idCliente)
+                throws SQLException {
+
+            String sql = "SELECT 1 "
+                    + "FROM solicitud "
+                    + "WHERE id_solicitud = ? "
+                    + "AND id_cliente = ? "
+                    + "LIMIT 1";
+
+            try (
+                    Connection cn = conexionBD();
+                    PreparedStatement ps = cn.prepareStatement(sql)
+            ) {
+
+                ps.setInt(1, idSolicitud);
+                ps.setInt(2, idCliente);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    return rs.next();
+                }
+            }
+        }
+
+        public boolean perteneceAInmobiliaria(int idSolicitud, int idInmobiliaria)
+                throws SQLException {
+
+            String sql = "SELECT 1 "
+                    + "FROM solicitud s "
+                    + "JOIN propiedad p ON p.id_propiedad = s.id_propiedad "
+                    + "WHERE s.id_solicitud = ? "
+                    + "AND p.id_inmobiliaria = ? "
+                    + "LIMIT 1";
+
+            try (
+                    Connection cn = conexionBD();
+                    PreparedStatement ps = cn.prepareStatement(sql)
+            ) {
+
+                ps.setInt(1, idSolicitud);
+                ps.setInt(2, idInmobiliaria);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    return rs.next();
+                }
+            }
+        }
+
+        private Solicitud mapear(ResultSet rs) throws SQLException {
+
+            Solicitud solicitud = new Solicitud();
+
+            solicitud.setId(rs.getInt("id_solicitud"));
+            solicitud.setPropiedadId(rs.getInt("id_propiedad"));
+            solicitud.setClienteId(rs.getInt("id_cliente"));
+            solicitud.setTipo(TipoSolicitud.desde(rs.getString("tipo")));
+            solicitud.setEstado(EstadoSolicitud.desde(rs.getString("estado")));
+            solicitud.setComentario(rs.getString("comentario"));
+            solicitud.setCreadoEn(leerFecha(rs, "creado_en"));
+            solicitud.setActualizadoEn(leerFecha(rs, "actualizado_en"));
+
+            return solicitud;
+        }
+
+        private LocalDateTime leerFecha(ResultSet rs, String columna)
+                throws SQLException {
+            Timestamp ts = rs.getTimestamp(columna);
+            return ts == null ? null : ts.toLocalDateTime();
+        }
+    }
+
+    class TipoPropiedadDAO {
+
+        public List<TipoPropiedad> listarTodos() throws SQLException {
+
+            String sql = "SELECT id_tipo_propiedad, nombre, descripcion "
+                    + "FROM tipo_propiedad "
+                    + "ORDER BY nombre";
+
+            List<TipoPropiedad> tipos = new ArrayList<>();
+
+            try (
+                    Connection cn = conexionBD();
+                    PreparedStatement ps = cn.prepareStatement(sql);
+                    ResultSet rs = ps.executeQuery()
+            ) {
+
+                while (rs.next()) {
+
+                    TipoPropiedad tipo = new TipoPropiedad();
+
+                    tipo.setIdTipo(
+                            rs.getInt("id_tipo_propiedad")
+                    );
+
+                    tipo.setNombre(
+                            rs.getString("nombre")
+                    );
+
+                    tipo.setDescripcion(
+                            rs.getString("descripcion")
+                    );
+
+                    tipos.add(tipo);
+                }
+            }
+
+            return tipos;
+        }
+
+        public TipoPropiedad buscarPorId(int id) throws SQLException {
+
+            String sql = "SELECT id_tipo_propiedad, nombre, descripcion "
+                    + "FROM tipo_propiedad "
+                    + "WHERE id_tipo_propiedad = ?";
+
+            try (
+                    Connection cn = conexionBD();
+                    PreparedStatement ps = cn.prepareStatement(sql)
+            ) {
+
+                ps.setInt(1, id);
+
+                try (ResultSet rs = ps.executeQuery()) {
+
+                    if (rs.next()) {
+
+                        TipoPropiedad tipo =
+                                new TipoPropiedad();
+
+                        tipo.setIdTipo(
+                                rs.getInt("id_tipo_propiedad")
+                        );
+
+                        tipo.setNombre(
+                                rs.getString("nombre")
+                        );
+
+                        tipo.setDescripcion(
+                                rs.getString("descripcion")
+                        );
+
+                        return tipo;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        public void insertar(TipoPropiedad tipo)
+                throws SQLException {
+
+            String sql = "INSERT INTO tipo_propiedad "
+                    + "(nombre, descripcion, slug) "
+                    + "VALUES (?, ?, ?)";
+
+            try (
+                    Connection cn = conexionBD();
+                    PreparedStatement ps =
+                            cn.prepareStatement(sql)
+            ) {
+
+                ps.setString(
+                        1,
+                        tipo.getNombre().trim()
+                );
+
+                ps.setString(
+                        2,
+                        tipo.getDescripcion() != null
+                                ? tipo.getDescripcion().trim()
+                                : null
+                );
+
+                ps.setString(
+                        3,
+                        generarSlug(tipo.getNombre())
+                );
+
+                ps.executeUpdate();
+            }
+        }
+
+        public void actualizar(TipoPropiedad tipo)
+                throws SQLException {
+
+            String sql = "UPDATE tipo_propiedad "
+                    + "SET nombre = ?, "
+                    + "descripcion = ?, "
+                    + "slug = ? "
+                    + "WHERE id_tipo_propiedad = ?";
+
+            try (
+                    Connection cn = conexionBD();
+                    PreparedStatement ps =
+                            cn.prepareStatement(sql)
+            ) {
+
+                ps.setString(
+                        1,
+                        tipo.getNombre().trim()
+                );
+
+                ps.setString(
+                        2,
+                        tipo.getDescripcion() != null
+                                ? tipo.getDescripcion().trim()
+                                : null
+                );
+
+                ps.setString(
+                        3,
+                        generarSlug(tipo.getNombre())
+                );
+
+                ps.setInt(
+                        4,
+                        tipo.getIdTipo()
+                );
+
+                ps.executeUpdate();
+            }
+        }
+
+        public void eliminar(int id)
+                throws SQLException {
+
+            String sql = "DELETE FROM tipo_propiedad "
+                    + "WHERE id_tipo_propiedad = ?";
+
+            try (
+                    Connection cn = conexionBD();
+                    PreparedStatement ps =
+                            cn.prepareStatement(sql)
+            ) {
+
+                ps.setInt(1, id);
+
+                ps.executeUpdate();
+            }
+        }
+
+        private String generarSlug(String nombre) {
+
+            String base = Normalizer.normalize(
+                    nombre.toLowerCase(),
+                    Normalizer.Form.NFD
+            ).replaceAll("\\p{M}", "");
+
+            return base.replaceAll("[^a-z0-9]+", "-")
+                    .replaceAll("(^-|-$)", "");
+        }
+    }
+
+    class UsuarioDAO {
+
+        public Usuario buscarPorCorreo(String correo) {
+
+            String sql = "SELECT "
+                    + "id_usuario, "
+                    + "correo, "
+                    + "password_hash, "
+                    + "estado, "
+                    + "fecha_creacion, "
+                    + "fecha_ultimo_acceso "
+                    + "FROM usuario "
+                    + "WHERE correo = ?";
+
+            try (
+                    Connection connection = conexionBD();
+                    PreparedStatement statement = connection.prepareStatement(sql)
+            ) {
+
+                statement.setString(1, correo);
+
+                try (ResultSet resultSet = statement.executeQuery()) {
+
+                    if (resultSet.next()) {
+
+                        Usuario usuario = new Usuario();
+
+                        usuario.setIdUsuario(
+                                resultSet.getInt("id_usuario")
+                        );
+
+                        usuario.setCorreo(
+                                resultSet.getString("correo")
+                        );
+
+                        usuario.setPasswordHash(
+                                resultSet.getString("password_hash")
+                        );
+
+                        usuario.setEstado(
+                                resultSet.getString("estado")
+                        );
+
+                        usuario.setFechaCreacion(
+                                resultSet.getTimestamp("fecha_creacion")
+                        );
+
+                        usuario.setFechaUltimoAcceso(
+                                resultSet.getTimestamp("fecha_ultimo_acceso")
+                        );
+
+                        return usuario;
+                    }
+                }
+
+            } catch (SQLException e) {
+
+                throw new RuntimeException(
+                        "Error al buscar el usuario por correo",
+                        e
+                );
+            }
+
+            return null;
+        }
+
+        public int crearUsuario(Usuario usuario) {
+
+            String sql = "INSERT INTO usuario ("
+                    + "correo, "
+                    + "password_hash, "
+                    + "estado"
+                    + ") VALUES (?, ?, ?)";
+
+            try (
+                    Connection connection = conexionBD();
+                    PreparedStatement statement = connection.prepareStatement(
+                            sql,
+                            Statement.RETURN_GENERATED_KEYS
+                    )
+            ) {
+
+                statement.setString(1, usuario.getCorreo());
+                statement.setString(2, usuario.getPasswordHash());
+                statement.setString(3, usuario.getEstado());
+
+                int filasAfectadas = statement.executeUpdate();
+
+                if (filasAfectadas == 0) {
+                    throw new SQLException(
+                            "No se pudo crear el usuario."
+                    );
+                }
+
+                try (ResultSet keys = statement.getGeneratedKeys()) {
+
+                    if (keys.next()) {
+                        return keys.getInt(1);
+                    }
+                }
+
+            } catch (SQLException e) {
+
+                throw new RuntimeException(
+                        "Error al crear el usuario",
+                        e
+                );
+            }
+
+            throw new RuntimeException(
+                    "No se pudo obtener el ID del usuario creado."
+            );
+        }
+
+        public int crearUsuario(Connection connection, Usuario usuario) throws SQLException {
+
+            String sql = "INSERT INTO usuario ("
+                    + "correo, "
+                    + "password_hash, "
+                    + "estado"
+                    + ") VALUES (?, ?, ?)";
+
+            try (PreparedStatement statement = connection.prepareStatement(
+                    sql,
+                    Statement.RETURN_GENERATED_KEYS
+            )) {
+
+                statement.setString(1, usuario.getCorreo());
+                statement.setString(2, usuario.getPasswordHash());
+                statement.setString(3, usuario.getEstado());
+
+                int filas = statement.executeUpdate();
+
+                if (filas == 0) {
+                    throw new SQLException("No se pudo crear el usuario.");
+                }
+
+                try (ResultSet keys = statement.getGeneratedKeys()) {
+
+                    if (keys.next()) {
+                        return keys.getInt(1);
+                    }
+                }
+            }
+
+            throw new SQLException("No se pudo obtener el ID del usuario.");
+        }
+
+        public boolean actualizarUltimoAcceso(int idUsuario) {
+
+            String sql = "UPDATE usuario "
+                    + "SET fecha_ultimo_acceso = CURRENT_TIMESTAMP "
+                    + "WHERE id_usuario = ?";
+
+            try (
+                    Connection connection = conexionBD();
+                    PreparedStatement statement = connection.prepareStatement(sql)
+            ) {
+
+                statement.setInt(1, idUsuario);
+
+                return statement.executeUpdate() > 0;
+
+            } catch (SQLException e) {
+
+                throw new RuntimeException(
+                        "Error al actualizar el último acceso",
+                        e
+                );
+            }
+        }
+
+        public List<Usuario> listarTodos() {
+
+            String sql = "SELECT "
+                    + "id_usuario, "
+                    + "correo, "
+                    + "password_hash, "
+                    + "estado, "
+                    + "fecha_creacion, "
+                    + "fecha_ultimo_acceso "
+                    + "FROM usuario "
+                    + "ORDER BY id_usuario ASC";
+
+            List<Usuario> usuarios = new ArrayList<>();
+
+            try (
+                    Connection connection = conexionBD();
+                    PreparedStatement statement = connection.prepareStatement(sql);
+                    ResultSet resultSet = statement.executeQuery()
+            ) {
+
+                while (resultSet.next()) {
+
+                    Usuario usuario = new Usuario();
+
+                    usuario.setIdUsuario(resultSet.getInt("id_usuario"));
+                    usuario.setCorreo(resultSet.getString("correo"));
+                    usuario.setPasswordHash(resultSet.getString("password_hash"));
+                    usuario.setEstado(resultSet.getString("estado"));
+                    usuario.setFechaCreacion(resultSet.getTimestamp("fecha_creacion"));
+                    usuario.setFechaUltimoAcceso(
+                            resultSet.getTimestamp("fecha_ultimo_acceso")
+                    );
+
+                    usuarios.add(usuario);
+                }
+
+            } catch (SQLException e) {
+
+                throw new RuntimeException(
+                        "Error al listar los usuarios",
+                        e
+                );
+            }
+
+            return usuarios;
+        }
+
+        public boolean cambiarEstado(int idUsuario, String estado) {
+
+            String sql = "UPDATE usuario "
+                    + "SET estado = ? "
+                    + "WHERE id_usuario = ?";
+
+            try (
+                    Connection connection = conexionBD();
+                    PreparedStatement statement = connection.prepareStatement(sql)
+            ) {
+
+                statement.setString(1, estado);
+                statement.setInt(2, idUsuario);
+
+                return statement.executeUpdate() > 0;
+
+            } catch (SQLException e) {
+
+                throw new RuntimeException(
+                        "Error al cambiar el estado del usuario",
+                        e
+                );
+            }
+        }
+    }
+
+    class UsuarioRolDAO {
+
+        public void asignarRol(Connection connection, int idUsuario, int idRol)
+                throws SQLException {
+
+            String sql = "INSERT INTO usuario_rol ("
+                    + "id_usuario, "
+                    + "id_rol"
+                    + ") VALUES (?, ?)";
+
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+
+                statement.setInt(1, idUsuario);
+                statement.setInt(2, idRol);
+
+                statement.executeUpdate();
+            }
+        }
+
+        public List<Rol> listarRoles(int idUsuario) {
+
+            String sql = "SELECT "
+                    + "r.id_rol, "
+                    + "r.nombre, "
+                    + "r.descripcion "
+                    + "FROM rol r "
+                    + "INNER JOIN usuario_rol ur ON r.id_rol = ur.id_rol "
+                    + "WHERE ur.id_usuario = ? "
+                    + "ORDER BY r.id_rol";
+
+            List<Rol> roles = new ArrayList<>();
+
+            try (
+                    Connection connection = conexionBD();
+                    PreparedStatement statement = connection.prepareStatement(sql)
+            ) {
+
+                statement.setInt(1, idUsuario);
+
+                try (ResultSet resultSet = statement.executeQuery()) {
+
+                    while (resultSet.next()) {
+
+                        Rol rol = new Rol();
+
+                        rol.setIdRol(resultSet.getInt("id_rol"));
+                        rol.setNombre(resultSet.getString("nombre"));
+                        rol.setDescripcion(
+                                resultSet.getString("descripcion")
+                        );
+
+                        roles.add(rol);
+                    }
+                }
+
+            } catch (SQLException e) {
+
+                throw new RuntimeException(
+                        "Error al listar los roles del usuario",
+                        e
+                );
+            }
+
+            return roles;
+        }
+
+        public void reemplazarRol(
+                int idUsuario,
+                int idRol
+        ) {
+
+            String deleteSql = "DELETE FROM usuario_rol "
+                    + "WHERE id_usuario = ?";
+
+            String insertSql = "INSERT INTO usuario_rol ("
+                    + "id_usuario, "
+                    + "id_rol"
+                    + ") VALUES (?, ?)";
+
+            try (
+                    Connection connection = conexionBD()
+            ) {
+
+                connection.setAutoCommit(false);
+
+                try {
+
+                    try (PreparedStatement deleteStatement =
+                                 connection.prepareStatement(deleteSql)) {
+
+                        deleteStatement.setInt(1, idUsuario);
+                        deleteStatement.executeUpdate();
+                    }
+
+                    try (PreparedStatement insertStatement =
+                                 connection.prepareStatement(insertSql)) {
+
+                        insertStatement.setInt(1, idUsuario);
+                        insertStatement.setInt(2, idRol);
+                        insertStatement.executeUpdate();
+                    }
+
+                    connection.commit();
+
+                } catch (SQLException e) {
+
+                    connection.rollback();
+                    throw e;
+                }
+
+            } catch (SQLException e) {
+
+                throw new RuntimeException(
+                        "Error al cambiar el rol del usuario",
+                        e
+                );
+            }
+        }
+    }
+
+    class CitaDAO {
+
+        public List<Cita> listarPorPropiedad(int propiedadId) throws SQLException {
+
+            String sql = "SELECT c.id_cita, c.id_propiedad, c.id_cliente, c.fecha_hora, "
+                    + "c.estado, c.observacion, c.creado_en, "
+                    + "CONCAT(perf.nombres, ' ', perf.apellidos) AS cliente_nombre_completo "
+                    + "FROM cita c "
+                    + "JOIN usuario u ON u.id_usuario = c.id_cliente "
+                    + "LEFT JOIN perfil perf ON perf.id_usuario = u.id_usuario "
+                    + "WHERE c.id_propiedad = ? "
+                    + "ORDER BY c.fecha_hora DESC";
+
+            List<Cita> citas = new ArrayList<>();
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setInt(1, propiedadId);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Cita c = mapearBase(rs);
+                        c.setClienteNombreCompleto(rs.getString("cliente_nombre_completo"));
+                        citas.add(c);
+                    }
+                }
+            }
+            return citas;
+        }
+
+        public List<Cita> listarPorCliente(int clienteId) throws SQLException {
+
+            String sql = "SELECT c.id_cita, c.id_propiedad, c.id_cliente, c.fecha_hora, "
+                    + "c.estado, c.observacion, c.creado_en, "
+                    + "p.titulo AS propiedad_titulo, p.codigo AS propiedad_codigo "
+                    + "FROM cita c "
+                    + "JOIN propiedad p ON p.id_propiedad = c.id_propiedad "
+                    + "WHERE c.id_cliente = ? "
+                    + "ORDER BY c.fecha_hora DESC";
+
+            List<Cita> citas = new ArrayList<>();
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setInt(1, clienteId);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Cita c = mapearBase(rs);
+                        c.setPropiedadTitulo(rs.getString("propiedad_titulo"));
+                        c.setPropiedadCodigo(rs.getString("propiedad_codigo"));
+                        citas.add(c);
+                    }
+                }
+            }
+            return citas;
+        }
+
+        public List<Cita> listarPorClienteYPropiedad(
+                int clienteId,
+                int propiedadId
+        ) throws SQLException {
+
+            String sql = "SELECT c.id_cita, "
+                    + "c.id_propiedad, "
+                    + "c.id_cliente, "
+                    + "c.fecha_hora, "
+                    + "c.estado, "
+                    + "c.observacion, "
+                    + "c.creado_en, "
+                    + "CONCAT("
+                    + "perf.nombres, "
+                    + "' ', "
+                    + "perf.apellidos"
+                    + ") AS cliente_nombre_completo "
+                    + "FROM cita c "
+                    + "JOIN usuario u ON u.id_usuario = c.id_cliente "
+                    + "LEFT JOIN perfil perf ON perf.id_usuario = u.id_usuario "
+                    + "WHERE c.id_cliente = ? "
+                    + "AND c.id_propiedad = ? "
+                    + "ORDER BY c.fecha_hora DESC";
+
+            List<Cita> citas = new ArrayList<>();
+
+            try (
+                    Connection cn = conexionBD();
+                    PreparedStatement ps = cn.prepareStatement(sql)
+            ) {
+                ps.setInt(1, clienteId);
+                ps.setInt(2, propiedadId);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Cita cita = mapearBase(rs);
+
+                        cita.setClienteNombreCompleto(
+                                rs.getString(
+                                        "cliente_nombre_completo"
+                                )
+                        );
+
+                        citas.add(cita);
+                    }
+                }
+            }
+
+            return citas;
+        }
+
+        public List<Cita> listarTodas() throws SQLException {
+
+            String sql = "SELECT c.id_cita, c.id_propiedad, c.id_cliente, c.fecha_hora, "
+                    + "c.estado, c.observacion, c.creado_en, "
+                    + "p.titulo AS propiedad_titulo, p.codigo AS propiedad_codigo, "
+                    + "CONCAT(perf.nombres, ' ', perf.apellidos) AS cliente_nombre_completo "
+                    + "FROM cita c "
+                    + "JOIN propiedad p ON p.id_propiedad = c.id_propiedad "
+                    + "JOIN usuario u ON u.id_usuario = c.id_cliente "
+                    + "LEFT JOIN perfil perf ON perf.id_usuario = u.id_usuario "
+                    + "ORDER BY c.fecha_hora DESC";
+
+            List<Cita> citas = new ArrayList<>();
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+
+                while (rs.next()) {
+                    Cita c = mapearBase(rs);
+                    c.setPropiedadTitulo(rs.getString("propiedad_titulo"));
+                    c.setPropiedadCodigo(rs.getString("propiedad_codigo"));
+                    c.setClienteNombreCompleto(rs.getString("cliente_nombre_completo"));
+                    citas.add(c);
+                }
+            }
+            return citas;
+        }
+
+        public Cita buscarPorId(int idCita) throws SQLException {
+
+            String sql = "SELECT id_cita, id_propiedad, id_cliente, fecha_hora, estado, observacion, creado_en "
+                    + "FROM cita "
+                    + "WHERE id_cita = ?";
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setInt(1, idCita);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    return rs.next() ? mapearBase(rs) : null;
+                }
+            }
+        }
+
+        public int agendar(Cita cita) throws SQLException {
+
+            String sql = "INSERT INTO cita (id_propiedad, id_cliente, fecha_hora, estado, observacion) "
+                    + "VALUES (?, ?, ?, ?, ?)";
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+                ps.setInt(1, cita.getPropiedadId());
+                ps.setInt(2, cita.getClienteId());
+                ps.setTimestamp(3, Timestamp.valueOf(cita.getFechaHora()));
+                ps.setString(4, cita.getEstado() != null ? cita.getEstado().name() : EstadoCita.SOLICITADA.name());
+                ps.setString(5, cita.getObservacion());
+
+                ps.executeUpdate();
+
+                try (ResultSet claves = ps.getGeneratedKeys()) {
+                    if (claves.next()) {
+                        cita.setId(claves.getInt(1));
+                    }
+                }
+                return cita.getId();
+
+            } catch (SQLIntegrityConstraintViolationException e) {
+                if (e.getMessage() != null && e.getMessage().contains("uq_cita_propiedad_horario")) {
+                    throw new DuplicidadException(
+                            "Ya hay una visita agendada a esa propiedad exactamente a esa fecha y hora. Elige otro horario.",
+                            e);
+                }
+                throw e;
+            }
+        }
+
+        public boolean cambiarEstado(int idCita, EstadoCita nuevoEstado) throws SQLException {
+
+            String sql = "UPDATE cita SET estado = ? WHERE id_cita = ?";
+
+            try (Connection cn = conexionBD();
+                 PreparedStatement ps = cn.prepareStatement(sql)) {
+
+                ps.setString(1, nuevoEstado.name());
+                ps.setInt(2, idCita);
+
+                return ps.executeUpdate() > 0;
+            }
+        }
+
+        private Cita mapearBase(ResultSet rs) throws SQLException {
+
+            Cita c = new Cita();
+            c.setId(rs.getInt("id_cita"));
+            c.setPropiedadId(rs.getInt("id_propiedad"));
+            c.setClienteId(rs.getInt("id_cliente"));
+            c.setFechaHora(leerFecha(rs, "fecha_hora"));
+            c.setEstado(EstadoCita.desde(rs.getString("estado")));
+            c.setObservacion(rs.getString("observacion"));
+            c.setCreadoEn(leerFecha(rs, "creado_en"));
+            return c;
+        }
+
+        private LocalDateTime leerFecha(ResultSet rs, String columna) throws SQLException {
+            Timestamp ts = rs.getTimestamp(columna);
+            return ts == null ? null : ts.toLocalDateTime();
+        }
+
+        public boolean perteneceACliente(
+                int idCita,
+                int idCliente
+        ) throws SQLException {
+
+            String sql = "SELECT 1 "
+                    + "FROM cita "
+                    + "WHERE id_cita = ? "
+                    + "AND id_cliente = ?";
+
+            try (
+                    Connection cn = conexionBD();
+                    PreparedStatement ps = cn.prepareStatement(sql)
+            ) {
+
+                ps.setInt(1, idCita);
+                ps.setInt(2, idCliente);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    return rs.next();
+                }
+            }
+        }
+    }
+%>

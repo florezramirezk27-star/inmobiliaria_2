@@ -1,0 +1,88 @@
+<%-- conexion.jspf
+     Sustituto en JSP de ConnectionFactory + helpers de sesión.
+     Se incluye (static) junto con entidades.jspf, data-access.jspf
+     y servicio.jspf vía todo.jspf. Solo este fragmento declara
+     imports y miembros (declaraciones <%! %>) --%>
+<%@ page import="java.util.ArrayList" %>
+<%@ page import="java.util.Arrays" %>
+<%@ page import="java.util.HashMap" %>
+<%@ page import="java.util.HashSet" %>
+<%@ page import="java.util.LinkedHashSet" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.Map" %>
+<%@ page import="java.util.Properties" %>
+<%@ page import="java.util.Set" %>
+<%@ page import="java.util.Locale" %>
+<%@ page import="java.util.Collections" %>
+<%@ page import="java.math.BigDecimal" %>
+<%@ page import="java.io.IOException" %>
+<%@ page import="java.io.InputStream" %>
+<%@ page import="java.sql.Connection" %>
+<%@ page import="java.sql.DriverManager" %>
+<%@ page import="java.sql.PreparedStatement" %>
+<%@ page import="java.sql.ResultSet" %>
+<%@ page import="java.sql.SQLException" %>
+<%@ page import="java.sql.SQLIntegrityConstraintViolationException" %>
+<%@ page import="java.sql.Statement" %>
+<%@ page import="java.sql.Timestamp" %>
+<%@ page import="java.sql.Types" %>
+<%@ page import="java.time.LocalDateTime" %>
+<%@ page import="java.time.format.DateTimeFormatter" %>
+<%@ page import="java.text.Normalizer" %>
+<%@ page import="org.mindrot.jbcrypt.BCrypt" %>
+<%!
+    private static final java.util.Properties PROPS_DB = new java.util.Properties();
+
+    static {
+        try (InputStream input = Thread.currentThread()
+                .getContextClassLoader()
+                .getResourceAsStream("db.properties")) {
+
+            if (input == null) {
+                throw new RuntimeException(
+                        "No se encontró el archivo db.properties"
+                );
+            }
+
+            PROPS_DB.load(input);
+
+            Class.forName(
+                    PROPS_DB.getProperty("db.driver")
+            );
+
+        } catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException(
+                    "Error cargando la configuración de la base de datos",
+                    e
+            );
+        }
+    }
+
+    private java.sql.Connection conexionBD() throws java.sql.SQLException {
+        return java.sql.DriverManager.getConnection(
+                PROPS_DB.getProperty("db.url"),
+                PROPS_DB.getProperty("db.username"),
+                PROPS_DB.getProperty("db.password")
+        );
+    }
+
+    /* true si la lista de objetos de rol de la sesión contiene el rol buscado.
+       Se usa reflexión para no depender de la clase Rol, que en este proyecto
+       vive como clase local dentro de cada JSP. */
+    private boolean tieneRol(Object roles, String rolBuscado) {
+        if (!(roles instanceof List<?>)) {
+            return false;
+        }
+        for (Object rol : (List<?>) roles) {
+            try {
+                Object nombre = rol.getClass().getMethod("getNombre").invoke(rol);
+                if (rolBuscado != null && rolBuscado.equalsIgnoreCase(String.valueOf(nombre))) {
+                    return true;
+                }
+            } catch (Exception ignorada) {
+                // rol sin getNombre(): no cuenta para la comprobación
+            }
+        }
+        return false;
+    }
+%>

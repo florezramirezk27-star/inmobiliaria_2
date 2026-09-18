@@ -1,0 +1,13 @@
+<%-- todo.jspf
+     Agregador: incluye en orden los cuatro fragmentos de negocio.
+     Debe incluirse únicamente desde los controladores (página con
+     contentType), que aportan además su propia lógica scriptlet.
+
+        <%@ include file="/WEB-INF/negocio/todo.jspf" %>
+
+     Los imports del controlador NO son necesarios: conexion.jspf
+     declara los java.* y BCrypt de todo el dominio. --%>
+<%@ include file="/WEB-INF/negocio/conexion.jspf" %>
+<%@ include file="/WEB-INF/negocio/entidades.jspf" %>
+<%@ include file="/WEB-INF/negocio/data-access.jspf" %>
+<%@ include file="/WEB-INF/negocio/servicio.jspf" %>

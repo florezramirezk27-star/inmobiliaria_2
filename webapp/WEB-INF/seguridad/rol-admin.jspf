@@ -1,0 +1,34 @@
+<%-- Fuerza UTF-8 y exige sesión iniciada con rol ADMIN. Uso al inicio de una JSP protegida. --%>
+<%
+    request.setCharacterEncoding("UTF-8");
+    response.setCharacterEncoding("UTF-8");
+
+    HttpSession sesionSeguridad = request.getSession(false);
+    if (sesionSeguridad == null || sesionSeguridad.getAttribute("usuario") == null) {
+        response.sendRedirect(request.getContextPath() + "/controladores/login.jsp");
+        return;
+    }
+
+    boolean permisoSeguridad = false;
+    Object rolesSeguridad = sesionSeguridad.getAttribute("roles");
+    if (rolesSeguridad instanceof java.util.List<?>) {
+        for (Object objetoSeguridad : (java.util.List<?>) rolesSeguridad) {
+            try {
+                Object nombreSeguridad = objetoSeguridad.getClass()
+                        .getMethod("getNombre")
+                        .invoke(objetoSeguridad);
+                if ("ADMIN".equalsIgnoreCase(String.valueOf(nombreSeguridad))) {
+                    permisoSeguridad = true;
+                    break;
+                }
+            } catch (Exception ignorada) {
+                // rol sin getNombre(): no cuenta para la comprobación
+            }
+        }
+    }
+
+    if (!permisoSeguridad) {
+        response.sendRedirect(request.getContextPath() + "/controladores/acceso-denegado.jsp");
+        return;
+    }
+%>

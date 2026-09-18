@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    Descriptor de la aplicación, versión 3.1 — la que corresponde a
+    Tomcat 8.5.x, que es donde se despliega.
+
+    La aplicación está construida por completo con JSP y fragmentos
+    JSPF: no hay clases Java propias y este descriptor no declara ni
+    mapea ninguna. Cada página se pide por su propia ruta .jsp, de modo
+    que la URL siempre muestra el archivo que se está ejecutando.
+
+    Lo único que se configura aquí:
+
+      - welcome-file: por dónde entra la raíz del sitio.
+      - jsp-config: codificación UTF-8 de páginas y fragmentos.
+      - multipart-config: las dos páginas que reciben archivos
+        (formulario de propiedad y documentos de una solicitud) lo
+        necesitan, porque de otro modo una JSP no convierte el cuerpo
+        de una petición multipart/form-data en Parts.
+      - error-page y session-config.
+-->
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
+                             http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+         version="3.1">
+
+    <display-name>Inmobiliaria</display-name>
+
+    <!--
+        Carpeta donde se guardan los archivos que suben los usuarios
+        (fotos de propiedades y documentos de solicitudes). Va fuera del
+        webapp para que no se pierdan al volver a desplegar.
+
+        Está comentado a propósito: sin este parámetro las páginas
+        deducen la carpeta solas a partir del directorio temporal que el
+        contenedor asigna a la aplicación, y queda en
+        <carpeta-de-Tomcat>/inmobiliaria-data. Así el proyecto funciona
+        en cualquier equipo sin editar nada.
+
+        Descoméntalo solo si quieres guardar los archivos en otro sitio,
+        poniendo una ruta absoluta de ESA máquina.
+
+    <context-param>
+        <param-name>carpetaDatos</param-name>
+        <param-value>/ruta/absoluta/a/inmobiliaria-data</param-value>
+    </context-param>
+    -->
+
+    <!--
+        La raiz entra por index.html, que es solo un salto a la pagina
+        real. Asi la barra de direcciones termina mostrando el .jsp.
+
+        No se puede poner index.jsp aqui: ese archivo es la VISTA de la
+        landing y el controlador /controladores/index.jsp le hace forward
+        despues de consultar la base. Servirla directamente la mostraria
+        sin datos.
+    -->
+    <welcome-file-list>
+        <welcome-file>index.html</welcome-file>
+        <welcome-file>controladores/index.jsp</welcome-file>
+    </welcome-file-list>
+
+    <!-- ============================================================ -->
+    <!-- Páginas que reciben archivos subidos                         -->
+    <!-- ============================================================ -->
+
+    <!-- Autenticación -->
+<!-- Catálogo y propiedades -->
+<!-- Cliente -->
+<!-- Inmobiliaria / agente -->
+<!-- Administrador -->
+<!-- Imágenes (binario) -->
+    <!--
+        Entrega de imagenes subidas.
+
+        Ya no se declara nada aqui: controladores/media-propiedad.jsp se
+        pide por su propia ruta, con el nombre del archivo como parametro
+        (?archivo=...). La URL la arma Entidades.urlDeImagen() a partir de
+        lo que hay guardado en la tabla imagen_propiedad.
+    -->
+
+    <jsp-config>
+        <jsp-property-group>
+            <url-pattern>*.jsp</url-pattern>
+            <page-encoding>UTF-8</page-encoding>
+            <el-ignored>false</el-ignored>
+            <trim-directive-whitespaces>true</trim-directive-whitespaces>
+        </jsp-property-group>
+
+        <jsp-property-group>
+            <url-pattern>*.jspf</url-pattern>
+            <page-encoding>UTF-8</page-encoding>
+            <el-ignored>false</el-ignored>
+            <trim-directive-whitespaces>true</trim-directive-whitespaces>
+        </jsp-property-group>
+    </jsp-config>
+
+</web-app>

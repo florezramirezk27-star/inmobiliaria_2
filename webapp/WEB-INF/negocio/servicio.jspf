@@ -1,0 +1,181 @@
+<%-- servicio.jspf
+     LoginResult y AuthService como CLASES LOCALES dentro del método _jspService.
+     Depende de entidades.jspf y data-access.jspf (incluidas antes vía todo.jspf):
+     usa Usuario, Perfil, Rol, UsuarioDAO, PerfilDAO, UsuarioRolDAO, RolDAO,
+     connexionBD() y BCrypt. --%>
+<%
+    class LoginResult {
+
+        private final boolean exitoso;
+        private final Usuario usuario;
+        private final List<Rol> roles;
+        private final String mensaje;
+
+        public LoginResult(
+                boolean exitoso,
+                Usuario usuario,
+                List<Rol> roles,
+                String mensaje
+        ) {
+            this.exitoso = exitoso;
+            this.usuario = usuario;
+            this.roles = roles;
+            this.mensaje = mensaje;
+        }
+
+        public boolean isExitoso() {
+            return exitoso;
+        }
+
+        public Usuario getUsuario() {
+            return usuario;
+        }
+
+        public List<Rol> getRoles() {
+            return roles;
+        }
+
+        public String getMensaje() {
+            return mensaje;
+        }
+    }
+
+    class AuthService {
+
+        private final UsuarioDAO usuarioDAO;
+        private final PerfilDAO perfilDAO;
+        private final UsuarioRolDAO usuarioRolDAO;
+        private final RolDAO rolDAO;
+
+        public AuthService() {
+            this.usuarioDAO = new UsuarioDAO();
+            this.perfilDAO = new PerfilDAO();
+            this.usuarioRolDAO = new UsuarioRolDAO();
+            this.rolDAO = new RolDAO();
+        }
+
+        public boolean correoExiste(String correo) {
+
+            return usuarioDAO.buscarPorCorreo(correo) != null;
+        }
+
+        public LoginResult autenticar(String correo, String password) {
+
+            Usuario usuario = usuarioDAO.buscarPorCorreo(correo);
+
+            if (usuario == null) {
+                return new LoginResult(false, null, null,
+                        "Correo o contraseña incorrectos.");
+            }
+
+            if (!"ACTIVO".equalsIgnoreCase(usuario.getEstado())) {
+                return new LoginResult(false, null, null,
+                        "La cuenta se encuentra inactiva.");
+            }
+
+            if (!BCrypt.checkpw(password, usuario.getPasswordHash())) {
+                return new LoginResult(false, null, null,
+                        "Correo o contraseña incorrectos.");
+            }
+
+            List<Rol> roles =
+                    rolDAO.obtenerRolesPorUsuario(
+                            usuario.getIdUsuario()
+                    );
+
+            if (roles == null || roles.isEmpty()) {
+                return new LoginResult(false, null, null,
+                        "El usuario no tiene roles asignados.");
+            }
+
+            usuarioDAO.actualizarUltimoAcceso(
+                    usuario.getIdUsuario()
+            );
+
+            return new LoginResult(
+                    true,
+                    usuario,
+                    roles,
+                    null
+            );
+        }
+
+        public void registrar(
+                String nombres,
+                String apellidos,
+                String correo,
+                String password,
+                String documento,
+                String telefono,
+                String direccion
+        ) {
+
+            if (correoExiste(correo)) {
+                throw new IllegalArgumentException(
+                        "El correo ya se encuentra registrado."
+                );
+            }
+
+            if (perfilDAO.existeDocumento(documento)) {
+                throw new IllegalArgumentException(
+                        "El número de documento ya se encuentra registrado."
+                );
+            }
+
+            String passwordHash = BCrypt.hashpw(
+                    password,
+                    BCrypt.gensalt()
+            );
+
+            Usuario usuario = new Usuario();
+            usuario.setCorreo(correo);
+            usuario.setPasswordHash(passwordHash);
+            usuario.setEstado("ACTIVO");
+
+            Perfil perfil = new Perfil();
+            perfil.setNombres(nombres);
+            perfil.setApellidos(apellidos);
+            perfil.setDocumento(documento);
+            perfil.setTelefono(telefono);
+            perfil.setDireccion(direccion);
+            perfil.setFoto(null);
+
+            try (Connection connection = conexionBD()) {
+
+                try {
+
+                    connection.setAutoCommit(false);
+
+                    int idUsuario =
+                            usuarioDAO.crearUsuario(connection, usuario);
+
+                    perfil.setIdUsuario(idUsuario);
+
+                    perfilDAO.crearPerfil(connection, perfil);
+
+                    // 3 = CLIENTE
+                    usuarioRolDAO.asignarRol(
+                            connection,
+                            idUsuario,
+                            3
+                    );
+
+                    connection.commit();
+
+                } catch (Exception e) {
+
+                    connection.rollback();
+
+                    throw e;
+                }
+
+            } catch (Exception e) {
+
+                throw new RuntimeException(
+                        "No se pudo completar el registro del usuario.",
+                        e
+                );
+            }
+        }
+    }
+%>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    Configuración de contexto de la aplicación.
+
+    allowCasualMultipartParsing hace que Tomcat interprete las peticiones
+    multipart/form-data (las de los formularios que suben archivos) aunque
+    la página que las recibe no esté declarada con <multipart-config>.
+
+    Sin esto, request.getParameter() devuelve null en el formulario de
+    propiedades y en la radicación de documentos: el formulario llega
+    "vacío" y la validación reclama todos los campos aunque estén llenos.
+
+    Antes esa configuración vivía en el web.xml, dentro de un bloque
+    <servlet> con <jsp-file>. Se movió aquí para que el descriptor no
+    declare nada parecido a un servlet.
+-->
+<Context allowCasualMultipartParsing="true">
+</Context>

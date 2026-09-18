@@ -1,0 +1,16 @@
+# Credenciales de la base de datos.
+#
+# Copia este archivo como db.properties (en esta misma carpeta,
+# WEB-INF/classes/) y pon los datos de TU servidor MySQL.
+#
+# Es el unico archivo que hay que ajustar para mover el proyecto de una
+# maquina a otra: la cadena de conexion esta centralizada aqui y ninguna
+# pagina la repite.
+#
+# db.properties no se versiona en el repositorio, para no publicar
+# contrasenas.
+
+db.url=jdbc:mysql://localhost:3306/inmobiliaria?useSSL=false&allowPublicKeyRetrieval=true
+db.username=root
+db.password=TU_PASSWORD
+db.driver=com.mysql.cj.jdbc.Driver

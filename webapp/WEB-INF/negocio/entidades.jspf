@@ -1,0 +1,840 @@
+<%-- entidades.jspf
+     Modelos del dominio como CLASES ANIDADAS ESTÁTICAS del servlet.
+     Cada JSP que incluya este fragmento compila sus propias copias privadas;
+     los objetos viajan entre JSP como atributos y se leen con EL (reflexión),
+     por lo que la identidad de la clase no importa fuera de la página.
+     Se declaran en <%! %> (no como clases locales) para que el compilador
+     de Jasper, que usa source 1.7, permita métodos y campos estáticos.
+
+     Los enums originales se representan como clases con constantes estáticas
+     del mismo tipo para conservar las comparaciones con == y los callbacks
+     name() / valueOf() que el código original usaba. --%>
+<%!
+    // ============================================================
+    // Enums (como clases anidadas estáticas con constantes estáticas)
+    // ============================================================
+
+    public static class Operacion {
+        public static final Operacion ARRIENDO = new Operacion("ARRIENDO", "Arriendo", true);
+        public static final Operacion VENTA = new Operacion("VENTA", "Venta", false);
+
+        private final String nombre;
+        private final String etiqueta;
+        private final boolean periodica;
+
+        private Operacion(String nombre, String etiqueta, boolean periodica) {
+            this.nombre = nombre;
+            this.etiqueta = etiqueta;
+            this.periodica = periodica;
+        }
+
+        public String getEtiqueta() { return etiqueta; }
+        public boolean isPeriodica() { return periodica; }
+        public String name() { return nombre; }
+        public String getNombre() { return nombre; }
+
+        @Override
+        public String toString() { return nombre; }
+
+        public static Operacion desde(String valor) {
+            if (valor == null || valor.isBlank()) {
+                return null;
+            }
+            String v = valor.trim().toUpperCase();
+            if ("ARRIENDO".equals(v)) return ARRIENDO;
+            if ("VENTA".equals(v)) return VENTA;
+            return null;
+        }
+    }
+
+    public static class EstadoPropiedad {
+        public static final EstadoPropiedad BORRADOR = new EstadoPropiedad("BORRADOR", "Borrador");
+        public static final EstadoPropiedad PUBLICADA = new EstadoPropiedad("PUBLICADA", "Publicada");
+        public static final EstadoPropiedad RESERVADA = new EstadoPropiedad("RESERVADA", "Reservada");
+        public static final EstadoPropiedad CERRADA = new EstadoPropiedad("CERRADA", "Cerrada");
+
+        private final String nombre;
+        private final String etiqueta;
+
+        private EstadoPropiedad(String nombre, String etiqueta) {
+            this.nombre = nombre;
+            this.etiqueta = etiqueta;
+        }
+
+        public String getEtiqueta() { return etiqueta; }
+        public String name() { return nombre; }
+        public String getNombre() { return nombre; }
+
+        @Override
+        public String toString() { return nombre; }
+
+        public static EstadoPropiedad desde(String valor) {
+            if (valor == null || valor.isBlank()) {
+                return null;
+            }
+            String v = valor.trim().toUpperCase();
+            if ("BORRADOR".equals(v)) return BORRADOR;
+            if ("PUBLICADA".equals(v)) return PUBLICADA;
+            if ("RESERVADA".equals(v)) return RESERVADA;
+            if ("CERRADA".equals(v)) return CERRADA;
+            return null;
+        }
+    }
+
+    public static class EstadoSolicitud {
+        public static final EstadoSolicitud PENDIENTE = new EstadoSolicitud("PENDIENTE", "Pendiente");
+        public static final EstadoSolicitud EN_REVISION = new EstadoSolicitud("EN_REVISION", "En revisión");
+        public static final EstadoSolicitud APROBADA = new EstadoSolicitud("APROBADA", "Aprobada");
+        public static final EstadoSolicitud RECHAZADA = new EstadoSolicitud("RECHAZADA", "Rechazada");
+
+        private final String nombre;
+        private final String etiqueta;
+
+        private EstadoSolicitud(String nombre, String etiqueta) {
+            this.nombre = nombre;
+            this.etiqueta = etiqueta;
+        }
+
+        public String getEtiqueta() { return etiqueta; }
+        public String name() { return nombre; }
+        public String getNombre() { return nombre; }
+
+        @Override
+        public String toString() { return nombre; }
+
+        public static EstadoSolicitud desde(String valor) {
+            if (valor == null || valor.isBlank()) {
+                return null;
+            }
+            String v = valor.trim().toUpperCase();
+            if ("PENDIENTE".equals(v)) return PENDIENTE;
+            if ("EN_REVISION".equals(v)) return EN_REVISION;
+            if ("APROBADA".equals(v)) return APROBADA;
+            if ("RECHAZADA".equals(v)) return RECHAZADA;
+            return null;
+        }
+    }
+
+    public static class TipoSolicitud {
+        public static final TipoSolicitud COMPRA = new TipoSolicitud("COMPRA", "Compra");
+        public static final TipoSolicitud ARRIENDO = new TipoSolicitud("ARRIENDO", "Arriendo");
+
+        private final String nombre;
+        private final String etiqueta;
+
+        private TipoSolicitud(String nombre, String etiqueta) {
+            this.nombre = nombre;
+            this.etiqueta = etiqueta;
+        }
+
+        public String getEtiqueta() { return etiqueta; }
+        public String name() { return nombre; }
+        public String getNombre() { return nombre; }
+
+        @Override
+        public String toString() { return nombre; }
+
+        public static TipoSolicitud desde(String valor) {
+            if (valor == null || valor.isBlank()) {
+                return null;
+            }
+            String v = valor.trim().toUpperCase();
+            if ("COMPRA".equals(v)) return COMPRA;
+            if ("ARRIENDO".equals(v)) return ARRIENDO;
+            return null;
+        }
+    }
+
+    public static class EstadoCita {
+        public static final EstadoCita SOLICITADA = new EstadoCita("SOLICITADA", "Solicitada");
+        public static final EstadoCita CONFIRMADA = new EstadoCita("CONFIRMADA", "Confirmada");
+        public static final EstadoCita RECHAZADA = new EstadoCita("RECHAZADA", "Rechazada");
+        public static final EstadoCita REALIZADA = new EstadoCita("REALIZADA", "Realizada");
+        public static final EstadoCita CANCELADA = new EstadoCita("CANCELADA", "Cancelada");
+
+        private final String nombre;
+        private final String etiqueta;
+
+        private EstadoCita(String nombre, String etiqueta) {
+            this.nombre = nombre;
+            this.etiqueta = etiqueta;
+        }
+
+        public String getEtiqueta() { return etiqueta; }
+        public String name() { return nombre; }
+        public String getNombre() { return nombre; }
+
+        @Override
+        public String toString() { return nombre; }
+
+        public static EstadoCita desde(String valor) {
+            if (valor == null || valor.isBlank()) {
+                return null;
+            }
+            String v = valor.trim().toUpperCase();
+            if ("SOLICITADA".equals(v)) return SOLICITADA;
+            if ("CONFIRMADA".equals(v)) return CONFIRMADA;
+            if ("RECHAZADA".equals(v)) return RECHAZADA;
+            if ("REALIZADA".equals(v)) return REALIZADA;
+            if ("CANCELADA".equals(v)) return CANCELADA;
+            return null;
+        }
+    }
+
+    public static class EstadoDocumento {
+        public static final EstadoDocumento PENDIENTE = new EstadoDocumento("PENDIENTE");
+        public static final EstadoDocumento APROBADO = new EstadoDocumento("APROBADO");
+        public static final EstadoDocumento RECHAZADO = new EstadoDocumento("RECHAZADO");
+
+        private final String nombre;
+
+        private EstadoDocumento(String nombre) {
+            this.nombre = nombre;
+        }
+
+        public String name() { return nombre; }
+        public String getNombre() { return nombre; }
+
+        @Override
+        public String toString() { return nombre; }
+
+        public static EstadoDocumento desde(String valor) {
+            if (valor == null || valor.isBlank()) {
+                return null;
+            }
+            String v = valor.trim();
+            if ("PENDIENTE".equalsIgnoreCase(v)) return PENDIENTE;
+            if ("APROBADO".equalsIgnoreCase(v)) return APROBADO;
+            if ("RECHAZADO".equalsIgnoreCase(v)) return RECHAZADO;
+            return null;
+        }
+    }
+
+    // ============================================================
+    // Modelos
+    // ============================================================
+
+    public static class Ciudad {
+        private int id;
+        private String nombre;
+        private String departamento;
+
+        public Ciudad() {
+        }
+
+        public Ciudad(int id, String nombre, String departamento) {
+            this.id = id;
+            this.nombre = nombre;
+            this.departamento = departamento;
+        }
+
+        public int getId() { return id; }
+        public void setId(int id) { this.id = id; }
+        public String getNombre() { return nombre; }
+        public void setNombre(String nombre) { this.nombre = nombre; }
+        public String getDepartamento() { return departamento; }
+        public void setDepartamento(String departamento) { this.departamento = departamento; }
+    }
+
+    public static class Caracteristica {
+        private int id;
+        private String nombre;
+        private String categoria;
+        private int cantidad = 1;
+
+        public int getId() { return id; }
+        public void setId(int id) { this.id = id; }
+        public String getNombre() { return nombre; }
+        public void setNombre(String nombre) { this.nombre = nombre; }
+        public String getCategoria() { return categoria; }
+        public void setCategoria(String categoria) { this.categoria = categoria; }
+        public int getCantidad() { return cantidad; }
+        public void setCantidad(int cantidad) { this.cantidad = cantidad; }
+    }
+
+    public static class TipoPropiedad {
+        private int idTipo;
+        private String nombre;
+        private String descripcion;
+        private String slug;
+
+        public TipoPropiedad() {
+        }
+
+        public TipoPropiedad(int idTipo, String nombre, String descripcion) {
+            this.idTipo = idTipo;
+            this.nombre = nombre;
+            this.descripcion = descripcion;
+        }
+
+        public TipoPropiedad(int idTipo, String nombre, String descripcion, String slug) {
+            this(idTipo, nombre, descripcion);
+            this.slug = slug;
+        }
+
+        public int getIdTipo() { return idTipo; }
+        public void setIdTipo(int idTipo) { this.idTipo = idTipo; }
+        public String getNombre() { return nombre; }
+        public void setNombre(String nombre) { this.nombre = nombre; }
+        public String getDescripcion() { return descripcion; }
+        public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
+        public String getSlug() { return slug; }
+        public void setSlug(String slug) { this.slug = slug; }
+    }
+
+    public static class Inmobiliaria {
+        private int id;
+        private String nombreComercial;
+        private String nit;
+        private String telefono;
+        private int usuarioId;
+
+        public Inmobiliaria() {
+        }
+
+        public int getId() { return id; }
+        public void setId(int id) { this.id = id; }
+        public String getNombreComercial() { return nombreComercial; }
+        public void setNombreComercial(String nombreComercial) { this.nombreComercial = nombreComercial; }
+        public String getNit() { return nit; }
+        public void setNit(String nit) { this.nit = nit; }
+        public String getTelefono() { return telefono; }
+        public void setTelefono(String telefono) { this.telefono = telefono; }
+        public int getUsuarioId() { return usuarioId; }
+        public void setUsuarioId(int usuarioId) { this.usuarioId = usuarioId; }
+    }
+
+    /**
+     * Traduce la ruta guardada en la base a una URL que el navegador
+     * pueda pedir, sin depender de ningun mapeo del web.xml.
+     *
+     *   "img/propiedades/x.jpg"   -> se deja igual (recurso estatico)
+     *   "media/propiedades/x.jpg" -> controladores/media-propiedad.jsp?archivo=x.jpg
+     */
+    public static String urlDeImagen(String ruta) {
+
+        if (ruta == null || ruta.isBlank()) {
+            return null;
+        }
+
+        String prefijo = "media/propiedades/";
+
+        if (ruta.startsWith(prefijo)) {
+            return "controladores/media-propiedad.jsp?archivo="
+                 + ruta.substring(prefijo.length());
+        }
+
+        return ruta;
+    }
+
+    public static class ImagenPropiedad {
+        private int id;
+        private int propiedadId;
+        private String ruta;
+        private String textoAlt;
+        private boolean esPortada;
+        private int orden;
+
+        public int getId() { return id; }
+        public void setId(int id) { this.id = id; }
+        public int getPropiedadId() { return propiedadId; }
+        public void setPropiedadId(int propiedadId) { this.propiedadId = propiedadId; }
+        public String getRuta() { return ruta; }
+        public void setRuta(String ruta) { this.ruta = ruta; }
+
+        /**
+         * URL con la que la vista pinta esta imagen.
+         *
+         * En la tabla la ruta se guarda de dos formas:
+         *   "img/propiedades/x.jpg"    -> archivo estatico del sitio
+         *   "media/propiedades/x.jpg"  -> archivo subido por un agente,
+         *                                 guardado fuera del webapp
+         *
+         * El segundo caso lo entrega controladores/media-propiedad.jsp.
+         * Antes esa pagina estaba mapeada en /media/propiedades/* desde el
+         * web.xml; al quitar ese mapeo la URL se arma aqui, sin tener que
+         * modificar lo que ya esta guardado en la base.
+         */
+        public String getUrl() { return urlDeImagen(ruta); }
+        public String getTextoAlt() { return textoAlt; }
+        public void setTextoAlt(String textoAlt) { this.textoAlt = textoAlt; }
+        public boolean isEsPortada() { return esPortada; }
+        public void setEsPortada(boolean esPortada) { this.esPortada = esPortada; }
+        public int getOrden() { return orden; }
+        public void setOrden(int orden) { this.orden = orden; }
+    }
+
+    public static class Rol {
+        private int idRol;
+        private String nombre;
+        private String descripcion;
+
+        public Rol() {
+        }
+
+        public Rol(int idRol, String nombre, String descripcion) {
+            this.idRol = idRol;
+            this.nombre = nombre;
+            this.descripcion = descripcion;
+        }
+
+        public int getIdRol() { return idRol; }
+        public void setIdRol(int idRol) { this.idRol = idRol; }
+        public String getNombre() { return nombre; }
+        public void setNombre(String nombre) { this.nombre = nombre; }
+        public String getDescripcion() { return descripcion; }
+        public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
+    }
+
+    public static class Perfil {
+        private int idPerfil;
+        private int idUsuario;
+        private String nombres;
+        private String apellidos;
+        private String documento;
+        private String telefono;
+        private String direccion;
+        private String foto;
+
+        public Perfil() {
+        }
+
+        public Perfil(int idPerfil, int idUsuario, String nombres,
+                      String apellidos, String documento, String telefono,
+                      String direccion, String foto) {
+            this.idPerfil = idPerfil;
+            this.idUsuario = idUsuario;
+            this.nombres = nombres;
+            this.apellidos = apellidos;
+            this.documento = documento;
+            this.telefono = telefono;
+            this.direccion = direccion;
+            this.foto = foto;
+        }
+
+        public int getIdPerfil() { return idPerfil; }
+        public void setIdPerfil(int idPerfil) { this.idPerfil = idPerfil; }
+        public int getIdUsuario() { return idUsuario; }
+        public void setIdUsuario(int idUsuario) { this.idUsuario = idUsuario; }
+        public String getNombres() { return nombres; }
+        public void setNombres(String nombres) { this.nombres = nombres; }
+        public String getApellidos() { return apellidos; }
+        public void setApellidos(String apellidos) { this.apellidos = apellidos; }
+        public String getDocumento() { return documento; }
+        public void setDocumento(String documento) { this.documento = documento; }
+        public String getTelefono() { return telefono; }
+        public void setTelefono(String telefono) { this.telefono = telefono; }
+        public String getDireccion() { return direccion; }
+        public void setDireccion(String direccion) { this.direccion = direccion; }
+        public String getFoto() { return foto; }
+        public void setFoto(String foto) { this.foto = foto; }
+    }
+
+    public static class Usuario {
+        private int idUsuario;
+        private String correo;
+        private String passwordHash;
+        private String estado;
+        private Timestamp fechaCreacion;
+        private Timestamp fechaUltimoAcceso;
+
+        public Usuario() {
+        }
+
+        public Usuario(int idUsuario, String correo, String passwordHash,
+                       String estado, Timestamp fechaCreacion,
+                       Timestamp fechaUltimoAcceso) {
+            this.idUsuario = idUsuario;
+            this.correo = correo;
+            this.passwordHash = passwordHash;
+            this.estado = estado;
+            this.fechaCreacion = fechaCreacion;
+            this.fechaUltimoAcceso = fechaUltimoAcceso;
+        }
+
+        public int getIdUsuario() { return idUsuario; }
+        public void setIdUsuario(int idUsuario) { this.idUsuario = idUsuario; }
+        public String getCorreo() { return correo; }
+        public void setCorreo(String correo) { this.correo = correo; }
+        public String getPasswordHash() { return passwordHash; }
+        public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+        public String getEstado() { return estado; }
+        public void setEstado(String estado) { this.estado = estado; }
+        public Timestamp getFechaCreacion() { return fechaCreacion; }
+        public void setFechaCreacion(Timestamp fechaCreacion) { this.fechaCreacion = fechaCreacion; }
+        public Timestamp getFechaUltimoAcceso() { return fechaUltimoAcceso; }
+        public void setFechaUltimoAcceso(Timestamp fechaUltimoAcceso) { this.fechaUltimoAcceso = fechaUltimoAcceso; }
+    }
+
+    public static class Auditoria {
+        private long idAuditoria;
+        private Integer idUsuario;
+        private String accion;
+        private String tablaAfectada;
+        private Integer idRegistro;
+        private String detalle;
+        private Timestamp creadoEn;
+
+        public Auditoria() {
+        }
+
+        public long getIdAuditoria() { return idAuditoria; }
+        public void setIdAuditoria(long idAuditoria) { this.idAuditoria = idAuditoria; }
+        public Integer getIdUsuario() { return idUsuario; }
+        public void setIdUsuario(Integer idUsuario) { this.idUsuario = idUsuario; }
+        public String getAccion() { return accion; }
+        public void setAccion(String accion) { this.accion = accion; }
+        public String getTablaAfectada() { return tablaAfectada; }
+        public void setTablaAfectada(String tablaAfectada) { this.tablaAfectada = tablaAfectada; }
+        public Integer getIdRegistro() { return idRegistro; }
+        public void setIdRegistro(Integer idRegistro) { this.idRegistro = idRegistro; }
+        public String getDetalle() { return detalle; }
+        public void setDetalle(String detalle) { this.detalle = detalle; }
+        public Timestamp getCreadoEn() { return creadoEn; }
+        public void setCreadoEn(Timestamp creadoEn) { this.creadoEn = creadoEn; }
+    }
+
+    public static class UsuarioRol {
+        private int idUsuario;
+        private int idRol;
+        private Timestamp fechaAsignacion;
+
+        public UsuarioRol() {
+        }
+
+        public UsuarioRol(int idUsuario, int idRol, Timestamp fechaAsignacion) {
+            this.idUsuario = idUsuario;
+            this.idRol = idRol;
+            this.fechaAsignacion = fechaAsignacion;
+        }
+
+        public int getIdUsuario() { return idUsuario; }
+        public void setIdUsuario(int idUsuario) { this.idUsuario = idUsuario; }
+        public int getIdRol() { return idRol; }
+        public void setIdRol(int idRol) { this.idRol = idRol; }
+        public Timestamp getFechaAsignacion() { return fechaAsignacion; }
+        public void setFechaAsignacion(Timestamp fechaAsignacion) { this.fechaAsignacion = fechaAsignacion; }
+    }
+
+    public static class Documento {
+        private int id;
+        private int solicitudId;
+        private String nombreArchivo;
+        private String ruta;
+        private EstadoDocumento estado;
+        private LocalDateTime subidoEn;
+
+        public int getId() { return id; }
+        public void setId(int id) { this.id = id; }
+        public int getSolicitudId() { return solicitudId; }
+        public void setSolicitudId(int solicitudId) { this.solicitudId = solicitudId; }
+        public String getNombreArchivo() { return nombreArchivo; }
+        public void setNombreArchivo(String nombreArchivo) { this.nombreArchivo = nombreArchivo; }
+        public String getRuta() { return ruta; }
+        public void setRuta(String ruta) { this.ruta = ruta; }
+        public EstadoDocumento getEstado() { return estado; }
+        public void setEstado(EstadoDocumento estado) { this.estado = estado; }
+        public LocalDateTime getSubidoEn() { return subidoEn; }
+        public void setSubidoEn(LocalDateTime subidoEn) { this.subidoEn = subidoEn; }
+    }
+
+    public static class Favorito {
+        private int usuarioId;
+        private int propiedadId;
+        private LocalDateTime creadoEn;
+
+        public int getUsuarioId() { return usuarioId; }
+        public void setUsuarioId(int usuarioId) { this.usuarioId = usuarioId; }
+        public int getPropiedadId() { return propiedadId; }
+        public void setPropiedadId(int propiedadId) { this.propiedadId = propiedadId; }
+        public LocalDateTime getCreadoEn() { return creadoEn; }
+        public void setCreadoEn(LocalDateTime creadoEn) { this.creadoEn = creadoEn; }
+    }
+
+    public static class Cita {
+        private final DateTimeFormatter FORMATO_VISITA =
+                DateTimeFormatter.ofPattern("EEEE d 'de' MMMM, h:mm a", new Locale("es", "ES"));
+
+        private int id;
+        private int propiedadId;
+        private int clienteId;
+        private LocalDateTime fechaHora;
+        private EstadoCita estado;
+        private String observacion;
+        private LocalDateTime creadoEn;
+        private String propiedadTitulo;
+        private String propiedadCodigo;
+        private String clienteNombreCompleto;
+
+        public int getId() { return id; }
+        public void setId(int id) { this.id = id; }
+        public int getPropiedadId() { return propiedadId; }
+        public void setPropiedadId(int propiedadId) { this.propiedadId = propiedadId; }
+        public int getClienteId() { return clienteId; }
+        public void setClienteId(int clienteId) { this.clienteId = clienteId; }
+        public LocalDateTime getFechaHora() { return fechaHora; }
+        public void setFechaHora(LocalDateTime fechaHora) { this.fechaHora = fechaHora; }
+        public EstadoCita getEstado() { return estado; }
+        public void setEstado(EstadoCita estado) { this.estado = estado; }
+        public String getObservacion() { return observacion; }
+        public void setObservacion(String observacion) { this.observacion = observacion; }
+        public LocalDateTime getCreadoEn() { return creadoEn; }
+        public void setCreadoEn(LocalDateTime creadoEn) { this.creadoEn = creadoEn; }
+        public String getPropiedadTitulo() { return propiedadTitulo; }
+        public void setPropiedadTitulo(String propiedadTitulo) { this.propiedadTitulo = propiedadTitulo; }
+        public String getPropiedadCodigo() { return propiedadCodigo; }
+        public void setPropiedadCodigo(String propiedadCodigo) { this.propiedadCodigo = propiedadCodigo; }
+        public String getClienteNombreCompleto() { return clienteNombreCompleto; }
+        public void setClienteNombreCompleto(String clienteNombreCompleto) { this.clienteNombreCompleto = clienteNombreCompleto; }
+
+        public boolean isPendienteDeGestion() {
+            return estado == EstadoCita.SOLICITADA;
+        }
+
+        public String getFechaHoraFormateada() {
+            return fechaHora != null ? FORMATO_VISITA.format(fechaHora) : "";
+        }
+    }
+
+    public static class Solicitud {
+        private int id;
+        private int propiedadId;
+        private int clienteId;
+        private TipoSolicitud tipo;
+        private EstadoSolicitud estado;
+        private String comentario;
+        private LocalDateTime creadoEn;
+        private LocalDateTime actualizadoEn;
+
+        public Solicitud() {
+        }
+
+        public int getId() { return id; }
+        public void setId(int id) { this.id = id; }
+        public int getPropiedadId() { return propiedadId; }
+        public void setPropiedadId(int propiedadId) { this.propiedadId = propiedadId; }
+        public int getClienteId() { return clienteId; }
+        public void setClienteId(int clienteId) { this.clienteId = clienteId; }
+        public TipoSolicitud getTipo() { return tipo; }
+        public void setTipo(TipoSolicitud tipo) { this.tipo = tipo; }
+        public EstadoSolicitud getEstado() { return estado; }
+        public void setEstado(EstadoSolicitud estado) { this.estado = estado; }
+        public String getComentario() { return comentario; }
+        public void setComentario(String comentario) { this.comentario = comentario; }
+        public LocalDateTime getCreadoEn() { return creadoEn; }
+        public void setCreadoEn(LocalDateTime creadoEn) { this.creadoEn = creadoEn; }
+        public LocalDateTime getActualizadoEn() { return actualizadoEn; }
+        public void setActualizadoEn(LocalDateTime actualizadoEn) { this.actualizadoEn = actualizadoEn; }
+
+        @Override
+        public String toString() {
+            return "Solicitud{" + id + " - propiedad " + propiedadId
+                    + " - " + tipo + " - " + estado + "}";
+        }
+    }
+
+    public static class Propiedad {
+        private int id;
+        private String codigo;
+        private String matriculaInmobiliaria;
+        private String titulo;
+        private String descripcion;
+        private Operacion operacion;
+        private EstadoPropiedad estado;
+        private int tipoPropiedadId;
+        private String tipoNombre;
+        private String tipoSlug;
+        private int ciudadId;
+        private String ciudadNombre;
+        private String ciudadDepartamento;
+        private int inmobiliariaId;
+        private String inmobiliariaNombre;
+        private int usuarioId;
+        private BigDecimal precio;
+        private BigDecimal administracion;
+        private BigDecimal areaConstruida;
+        private BigDecimal areaLote;
+        private int habitaciones;
+        private int banos;
+        private int parqueaderos;
+        private Integer estrato;
+        private Integer antiguedadAnios;
+        private String direccion;
+        private String barrio;
+        private BigDecimal latitud;
+        private BigDecimal longitud;
+        private LocalDateTime creadoEn;
+        private LocalDateTime actualizadoEn;
+        private String rutaPortada;
+
+        public Propiedad() {
+        }
+
+        public boolean isPrecioMensual() {
+            return operacion != null && operacion.isPeriodica();
+        }
+
+        public String getUbicacionCorta() {
+            StringBuilder sb = new StringBuilder();
+            if (barrio != null && !barrio.isBlank()) {
+                sb.append(barrio).append(", ");
+            }
+            if (ciudadNombre != null) {
+                sb.append(ciudadNombre);
+            }
+            if (ciudadDepartamento != null && !ciudadDepartamento.isBlank()) {
+                sb.append(", ").append(ciudadDepartamento);
+            }
+            return sb.toString();
+        }
+
+        public boolean isTienePortada() {
+            return rutaPortada != null && !rutaPortada.isBlank();
+        }
+
+        public int getId() { return id; }
+        public void setId(int id) { this.id = id; }
+        public String getCodigo() { return codigo; }
+        public void setCodigo(String codigo) { this.codigo = codigo; }
+        public String getMatriculaInmobiliaria() { return matriculaInmobiliaria; }
+        public void setMatriculaInmobiliaria(String matriculaInmobiliaria) { this.matriculaInmobiliaria = matriculaInmobiliaria; }
+        public String getTitulo() { return titulo; }
+        public void setTitulo(String titulo) { this.titulo = titulo; }
+        public String getDescripcion() { return descripcion; }
+        public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
+        public Operacion getOperacion() { return operacion; }
+        public void setOperacion(Operacion operacion) { this.operacion = operacion; }
+        public EstadoPropiedad getEstado() { return estado; }
+        public void setEstado(EstadoPropiedad estado) { this.estado = estado; }
+        public int getTipoPropiedadId() { return tipoPropiedadId; }
+        public void setTipoPropiedadId(int tipoPropiedadId) { this.tipoPropiedadId = tipoPropiedadId; }
+        public String getTipoNombre() { return tipoNombre; }
+        public void setTipoNombre(String tipoNombre) { this.tipoNombre = tipoNombre; }
+        public String getTipoSlug() { return tipoSlug; }
+        public void setTipoSlug(String tipoSlug) { this.tipoSlug = tipoSlug; }
+        public int getCiudadId() { return ciudadId; }
+        public void setCiudadId(int ciudadId) { this.ciudadId = ciudadId; }
+        public String getCiudadNombre() { return ciudadNombre; }
+        public void setCiudadNombre(String ciudadNombre) { this.ciudadNombre = ciudadNombre; }
+        public String getCiudadDepartamento() { return ciudadDepartamento; }
+        public void setCiudadDepartamento(String ciudadDepartamento) { this.ciudadDepartamento = ciudadDepartamento; }
+        public int getInmobiliariaId() { return inmobiliariaId; }
+        public void setInmobiliariaId(int inmobiliariaId) { this.inmobiliariaId = inmobiliariaId; }
+        public String getInmobiliariaNombre() { return inmobiliariaNombre; }
+        public void setInmobiliariaNombre(String inmobiliariaNombre) { this.inmobiliariaNombre = inmobiliariaNombre; }
+        public int getUsuarioId() { return usuarioId; }
+        public void setUsuarioId(int usuarioId) { this.usuarioId = usuarioId; }
+        public BigDecimal getPrecio() { return precio; }
+        public void setPrecio(BigDecimal precio) { this.precio = precio; }
+        public BigDecimal getAdministracion() { return administracion; }
+        public void setAdministracion(BigDecimal administracion) { this.administracion = administracion; }
+        public BigDecimal getAreaConstruida() { return areaConstruida; }
+        public void setAreaConstruida(BigDecimal areaConstruida) { this.areaConstruida = areaConstruida; }
+        public BigDecimal getAreaLote() { return areaLote; }
+        public void setAreaLote(BigDecimal areaLote) { this.areaLote = areaLote; }
+        public int getHabitaciones() { return habitaciones; }
+        public void setHabitaciones(int habitaciones) { this.habitaciones = habitaciones; }
+        public int getBanos() { return banos; }
+        public void setBanos(int banos) { this.banos = banos; }
+        public int getParqueaderos() { return parqueaderos; }
+        public void setParqueaderos(int parqueaderos) { this.parqueaderos = parqueaderos; }
+        public Integer getEstrato() { return estrato; }
+        public void setEstrato(Integer estrato) { this.estrato = estrato; }
+        public Integer getAntiguedadAnios() { return antiguedadAnios; }
+        public void setAntiguedadAnios(Integer antiguedadAnios) { this.antiguedadAnios = antiguedadAnios; }
+        public String getDireccion() { return direccion; }
+        public void setDireccion(String direccion) { this.direccion = direccion; }
+        public String getBarrio() { return barrio; }
+        public void setBarrio(String barrio) { this.barrio = barrio; }
+        public BigDecimal getLatitud() { return latitud; }
+        public void setLatitud(BigDecimal latitud) { this.latitud = latitud; }
+        public BigDecimal getLongitud() { return longitud; }
+        public void setLongitud(BigDecimal longitud) { this.longitud = longitud; }
+        public LocalDateTime getCreadoEn() { return creadoEn; }
+        public void setCreadoEn(LocalDateTime creadoEn) { this.creadoEn = creadoEn; }
+        public LocalDateTime getActualizadoEn() { return actualizadoEn; }
+        public void setActualizadoEn(LocalDateTime actualizadoEn) { this.actualizadoEn = actualizadoEn; }
+        public String getRutaPortada() { return rutaPortada; }
+
+        /** URL de la portada lista para el atributo src de la vista. */
+        public String getUrlPortada() { return urlDeImagen(rutaPortada); }
+        public void setRutaPortada(String rutaPortada) { this.rutaPortada = rutaPortada; }
+
+        @Override
+        public String toString() {
+            return "Propiedad{" + codigo + " - " + titulo + " - " + precio + "}";
+        }
+    }
+
+    // ============================================================
+    // Soporte de consulta y excepción de duplicados
+    // ============================================================
+
+    public static class FiltroPropiedad {
+        private Operacion operacion;
+        private Integer ciudadId;
+        private String tipoSlug;
+        private BigDecimal precioMinimo;
+        private BigDecimal precioMaximo;
+        private Integer habitacionesMinimo;
+        private Integer banosMinimo;
+        private String texto;
+        private List<Integer> caracteristicasIds;
+        private int limite = 24;
+        private int desplazamiento = 0;
+
+        public FiltroPropiedad() {
+        }
+
+        public boolean isVacio() {
+            return operacion == null
+                    && ciudadId == null
+                    && (tipoSlug == null || tipoSlug.isBlank())
+                    && precioMinimo == null
+                    && precioMaximo == null
+                    && habitacionesMinimo == null
+                    && banosMinimo == null
+                    && (texto == null || texto.isBlank())
+                    && (caracteristicasIds == null || caracteristicasIds.isEmpty());
+        }
+
+        public Operacion getOperacion() { return operacion; }
+        public void setOperacion(Operacion operacion) { this.operacion = operacion; }
+        public Integer getCiudadId() { return ciudadId; }
+        public void setCiudadId(Integer ciudadId) { this.ciudadId = ciudadId; }
+        public String getTipoSlug() { return tipoSlug; }
+        public void setTipoSlug(String tipoSlug) { this.tipoSlug = tipoSlug; }
+        public BigDecimal getPrecioMinimo() { return precioMinimo; }
+        public void setPrecioMinimo(BigDecimal precioMinimo) { this.precioMinimo = precioMinimo; }
+        public BigDecimal getPrecioMaximo() { return precioMaximo; }
+        public void setPrecioMaximo(BigDecimal precioMaximo) { this.precioMaximo = precioMaximo; }
+        public Integer getHabitacionesMinimo() { return habitacionesMinimo; }
+        public void setHabitacionesMinimo(Integer habitacionesMinimo) { this.habitacionesMinimo = habitacionesMinimo; }
+        public Integer getBanosMinimo() { return banosMinimo; }
+        public void setBanosMinimo(Integer banosMinimo) { this.banosMinimo = banosMinimo; }
+        public String getTexto() { return texto; }
+        public void setTexto(String texto) { this.texto = texto; }
+        public List<Integer> getCaracteristicasIds() { return caracteristicasIds; }
+        public void setCaracteristicasIds(List<Integer> caracteristicasIds) { this.caracteristicasIds = caracteristicasIds; }
+        public int getLimite() { return limite; }
+        public void setLimite(int limite) {
+            if (limite < 1) {
+                this.limite = 1;
+            } else if (limite > 100) {
+                this.limite = 100;
+            } else {
+                this.limite = limite;
+            }
+        }
+        public int getDesplazamiento() { return desplazamiento; }
+        public void setDesplazamiento(int desplazamiento) {
+            this.desplazamiento = Math.max(desplazamiento, 0);
+        }
+    }
+
+    public static class DuplicidadException extends RuntimeException {
+        public DuplicidadException(String mensaje, Throwable causa) {
+            super(mensaje, causa);
+        }
+    }
+%>

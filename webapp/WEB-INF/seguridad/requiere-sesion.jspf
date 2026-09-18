@@ -1,0 +1,11 @@
+<%-- Fuerza UTF-8 y exige sesión iniciada (cualquier rol). Uso al inicio de una JSP protegida. --%>
+<%
+    request.setCharacterEncoding("UTF-8");
+    response.setCharacterEncoding("UTF-8");
+
+    HttpSession sesionSeguridad = request.getSession(false);
+    if (sesionSeguridad == null || sesionSeguridad.getAttribute("usuario") == null) {
+        response.sendRedirect(request.getContextPath() + "/controladores/login.jsp");
+        return;
+    }
+%>

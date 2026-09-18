@@ -1,0 +1,353 @@
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Busca casas y apartamentos en arriendo o venta en Bucaramanga y su área metropolitana.">
+
+    <title>Inmobiliaria — Casas y apartamentos en Bucaramanga</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+          crossorigin="anonymous">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+          rel="stylesheet">
+
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/estilos.css?v=editorial-final-2">
+</head>
+
+<body>
+
+<%-- Iconos en línea, sin dependencias externas --%>
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+    <symbol id="ico-habitacion" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6"/>
+        <path d="M3 18h18M6 10V7a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v3"/>
+    </symbol>
+    <symbol id="ico-bano" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 12h16v3a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-3Z"/>
+        <path d="M7 12V6a2 2 0 0 1 4 0"/>
+        <path d="M7 19l-1 2M17 19l1 2"/>
+    </symbol>
+    <symbol id="ico-area" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="4" y="4" width="16" height="16" rx="1.5"/>
+        <path d="M8 4v4H4M16 20v-4h4"/>
+    </symbol>
+    <symbol id="ico-corazon" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 20.5s-7-4.35-9.5-8.6C.9 8.9 2.4 5.5 5.9 5.5c2 0 3.4 1.1 4.4 2.5.9-1.4 2.3-2.5 4.4-2.5 3.5 0 5 3.4 3.4 6.4-2.5 4.25-9.1 8.6-9.1 8.6Z"/>
+    </symbol>
+</svg>
+
+<%@ include file="/WEB-INF/includes/navbar.jspf" %>
+
+<!-- ============================================================
+     Hero
+     ============================================================ -->
+<header class="hero hero-editorial">
+    <div class="container">
+        <div class="hero-editorial-grid">
+
+            <div class="hero-editorial-copy">
+                <span class="hero-kicker">
+                    <span class="hero-kicker-punto"></span>
+                    INMUEBLES SELECCIONADOS · SANTANDER
+                </span>
+
+                <h1 class="fuente-display">
+                    Encuentra un lugar
+                    <span>que se sienta tuyo.</span>
+                </h1>
+
+                <p>
+                    Explora propiedades en Bucaramanga y su área metropolitana
+                    para comprar, arrendar y dar el siguiente paso con confianza.
+                </p>
+
+                <div class="hero-acciones">
+                    <a class="btn btn-marca btn-grande"
+                       href="${pageContext.request.contextPath}/controladores/propiedades.jsp">
+                        Explorar propiedades
+                        <i class="bi bi-arrow-up-right" aria-hidden="true"></i>
+                    </a>
+
+                    <a class="btn btn-contorno btn-grande" href="#catalogo">
+                        Ver catálogo
+                    </a>
+                </div>
+            </div>
+
+            <div class="hero-arquitectura" aria-hidden="true">
+
+                <div class="plano-linea plano-linea-a"></div>
+                <div class="plano-linea plano-linea-b"></div>
+                <div class="plano-linea plano-linea-c"></div>
+
+                <div class="plano-marco">
+                    <div class="plano-habitacion plano-habitacion-a"></div>
+                    <div class="plano-habitacion plano-habitacion-b"></div>
+                    <div class="plano-habitacion plano-habitacion-c"></div>
+                    <div class="plano-arco"></div>
+                    <div class="plano-circulo"></div>
+                </div>
+
+                <div class="hero-info-card">
+                    <div class="hero-info-superior">
+                        <span class="hero-info-icono">
+                            <i class="bi bi-buildings"></i>
+                        </span>
+                        <span>Experiencia inmobiliaria digital</span>
+                    </div>
+
+                    <div class="hero-info-item">
+                        <small>Cobertura</small>
+                        <strong>Bucaramanga y área metropolitana</strong>
+                    </div>
+
+                    <div class="hero-info-divisor"></div>
+
+                    <div class="hero-info-fila">
+                        <div>
+                            <small>Modalidades</small>
+                            <strong>Venta · Arriendo</strong>
+                        </div>
+                        <div>
+                            <small>Gestión</small>
+                            <strong>100% en línea</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <span class="hero-numero">01</span>
+            </div>
+
+        </div>
+    </div>
+</header>
+
+<!-- ============================================================
+     Buscador — superpuesto sobre el borde inferior del hero.
+     Los parámetros GET son los que espera PropiedadServlet:
+     operacion, ciudad (ID numérico), tipo, precioMax.
+     ============================================================ -->
+<section class="container" aria-labelledby="titulo-buscador">
+    <h2 id="titulo-buscador" class="visually-hidden">Buscar propiedades</h2>
+
+    <form class="buscador" action="${pageContext.request.contextPath}/controladores/propiedades.jsp" method="get">
+
+        <div class="operacion btn-group mb-3" role="group" aria-label="Tipo de operación">
+            <input type="radio" class="btn-check" name="operacion" id="op-arriendo" value="arriendo" checked>
+            <label class="btn" for="op-arriendo">Arriendo</label>
+
+            <input type="radio" class="btn-check" name="operacion" id="op-venta" value="venta">
+            <label class="btn" for="op-venta">Venta</label>
+        </div>
+
+        <div class="row g-3 align-items-end">
+
+            <div class="col-12 col-md-4">
+                <label class="form-label" for="ciudad">Ciudad</label>
+                <select class="form-select" id="ciudad" name="ciudad">
+                    <option value="">Todas</option>
+                    <option value="1">Bucaramanga</option>
+                    <option value="2">Floridablanca</option>
+                    <option value="3">Girón</option>
+                    <option value="4">Piedecuesta</option>
+                </select>
+            </div>
+
+            <div class="col-12 col-md-3">
+                <label class="form-label" for="tipo">Tipo de inmueble</label>
+                <select class="form-select" id="tipo" name="tipo">
+                    <option value="">Todos</option>
+                    <option value="apartamento">Apartamento</option>
+                    <option value="casa">Casa</option>
+                    <option value="local">Local comercial</option>
+                    <option value="lote">Lote</option>
+                </select>
+            </div>
+
+            <div class="col-12 col-md-3">
+                <label class="form-label" for="precioMax">Precio máximo</label>
+                <input type="number" class="form-control" id="precioMax" name="precioMax"
+                       min="0" step="100000" placeholder="Sin límite">
+            </div>
+
+            <div class="col-12 col-md-2 d-grid">
+                <button type="submit" class="btn btn-marca">
+                    <i class="bi bi-search" aria-hidden="true"></i> Buscar
+                </button>
+            </div>
+
+        </div>
+    </form>
+</section>
+
+<!-- ============================================================
+     Confianza
+     ============================================================ -->
+<section class="container mt-5 pt-3 home-beneficios">
+    <div class="row g-4">
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="d-flex align-items-start gap-3">
+                <span class="tarjeta-acceso-icono icono" style="width:40px;height:40px;background-color:var(--success-bg);color:var(--secondary);display:flex;align-items:center;justify-content:center;border-radius:8px;flex-shrink:0;">
+                    <i class="bi bi-card-checklist"></i>
+                </span>
+                <div>
+                    <h4 class="mb-1">Fichas completas</h4>
+                    <p class="mb-0 texto-secundario" style="color:var(--text-secondary);font-size:.875rem;">Área, habitaciones, estrato y administración en cada publicación.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="d-flex align-items-start gap-3">
+                <span style="width:40px;height:40px;background-color:var(--success-bg);color:var(--secondary);display:flex;align-items:center;justify-content:center;border-radius:8px;flex-shrink:0;">
+                    <i class="bi bi-sliders"></i>
+                </span>
+                <div>
+                    <h4 class="mb-1">Búsqueda con filtros</h4>
+                    <p class="mb-0" style="color:var(--text-secondary);font-size:.875rem;">Filtra por ciudad, tipo de inmueble y presupuesto.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="d-flex align-items-start gap-3">
+                <span style="width:40px;height:40px;background-color:var(--success-bg);color:var(--secondary);display:flex;align-items:center;justify-content:center;border-radius:8px;flex-shrink:0;">
+                    <i class="bi bi-calendar-check"></i>
+                </span>
+                <div>
+                    <h4 class="mb-1">Visitas en línea</h4>
+                    <p class="mb-0" style="color:var(--text-secondary);font-size:.875rem;">Agenda una cita con el agente desde la ficha del inmueble.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="d-flex align-items-start gap-3">
+                <span style="width:40px;height:40px;background-color:var(--success-bg);color:var(--secondary);display:flex;align-items:center;justify-content:center;border-radius:8px;flex-shrink:0;">
+                    <i class="bi bi-file-earmark-text"></i>
+                </span>
+                <div>
+                    <h4 class="mb-1">Solicitudes con soporte</h4>
+                    <p class="mb-0" style="color:var(--text-secondary);font-size:.875rem;">Radica tu solicitud y adjunta los documentos requeridos.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     Catálogo — publicaciones recientes (IndexServlet)
+     ============================================================ -->
+<main class="container my-5 pt-4 home-catalogo" id="catalogo">
+
+    <div class="cabecera-seccion">
+        <div>
+            <h2 class="fuente-display mb-1">Publicaciones recientes</h2>
+            <p class="descripcion mb-0">Los últimos inmuebles publicados por agentes y propietarios.</p>
+        </div>
+        <a class="btn btn-contorno" href="${pageContext.request.contextPath}/controladores/propiedades.jsp">
+            Ver todas las propiedades
+        </a>
+    </div>
+
+    <c:if test="${not empty errorConsulta}">
+        <div class="alert alert-warning" role="alert">${errorConsulta}</div>
+    </c:if>
+
+    <c:if test="${empty propiedades and empty errorConsulta}">
+        <div class="sin-resultados">
+            <span class="sin-resultados-icono"><i class="bi bi-houses"></i></span>
+            <h3>Todavía no hay propiedades publicadas</h3>
+            <p>Cuando los agentes publiquen inmuebles, aparecerán aquí.</p>
+            <a class="btn btn-marca" href="${pageContext.request.contextPath}/controladores/propiedades.jsp">Ver el catálogo</a>
+        </div>
+    </c:if>
+
+    <div class="row g-4">
+        <c:forEach var="p" items="${propiedades}">
+            <div class="col-12 col-sm-6 col-lg-4">
+                <div class="position-relative h-100">
+
+                    <%-- El botón de favorito vive FUERA del <a> a propósito:
+                         un <button> dentro de un enlace dispara a la vez la
+                         navegación y el envío del formulario. --%>
+                    <form method="post" class="boton-favorito-form"
+                          action="${pageContext.request.contextPath}/controladores/favoritos.jsp">
+                        <input type="hidden" name="propiedadId" value="${p.id}">
+                        <input type="hidden" name="volver" value="${urlActual}">
+                        <button type="submit"
+                                class="boton-favorito ${favoritosIds.contains(p.id) ? 'activo' : ''}"
+                                aria-label="${favoritosIds.contains(p.id) ? 'Quitar de favoritos' : 'Agregar a favoritos'}">
+                            <svg><use href="#ico-corazon"/></svg>
+                        </button>
+                    </form>
+
+                    <a class="text-decoration-none d-block h-100" style="color: inherit;"
+                       href="${pageContext.request.contextPath}/controladores/propiedad-detalle.jsp?id=${p.id}">
+                    <article class="tarjeta-prop">
+
+                        <div class="marco-foto">
+                            <c:choose>
+                                <c:when test="${p.tienePortada}">
+                                    <img class="foto-prop" src="${pageContext.request.contextPath}/${p.urlPortada}"
+                                         alt="Foto de ${p.titulo}" loading="lazy">
+                                </c:when>
+                                <c:otherwise>
+                                    <div class="foto-prop"></div>
+                                </c:otherwise>
+                            </c:choose>
+
+                            <span class="etiqueta-operacion">${p.operacion.etiqueta}</span>
+                        </div>
+
+                        <div class="cuerpo-tarjeta">
+                            <p class="precio">
+                                <fmt:formatNumber value="${p.precio}" type="currency"
+                                                   currencySymbol="$ " groupingUsed="true" maxFractionDigits="0"/>
+                                <c:if test="${p.precioMensual}"><span class="periodo">/ mes</span></c:if>
+                            </p>
+                            <p class="direccion">${p.titulo}</p>
+                            <p class="barrio">
+                                <i class="bi bi-geo-alt" aria-hidden="true"></i>${p.ubicacionCorta}
+                            </p>
+
+                            <div class="fichas">
+                                <c:if test="${p.habitaciones > 0}">
+                                    <span class="ficha"><svg><use href="#ico-habitacion"/></svg>${p.habitaciones} hab</span>
+                                </c:if>
+                                <c:if test="${p.banos > 0}">
+                                    <span class="ficha"><svg><use href="#ico-bano"/></svg>${p.banos} baños</span>
+                                </c:if>
+                                <c:if test="${not empty p.areaConstruida}">
+                                    <span class="ficha"><svg><use href="#ico-area"/></svg>${p.areaConstruida} m²</span>
+                                </c:if>
+                            </div>
+                        </div>
+                    </article>
+                    </a>
+
+                </div>
+            </div>
+        </c:forEach>
+    </div>
+
+</main>
+
+<%@ include file="/WEB-INF/includes/footer.jspf" %>
+
+</body>
+</html>
